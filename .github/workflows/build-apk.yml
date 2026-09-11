@@ -31,6 +31,7 @@ jobs:
           s = s.replace('LinearProgressIndicator(progress = { mission / 5f }, Modifier', 'LinearProgressIndicator(progress = { mission / 5f }, modifier = Modifier')
           s = s.replace('Button(reward, enabled = mission >= 5, Modifier.fillMaxWidth()', 'Button(onClick = reward, enabled = mission >= 5, modifier = Modifier.fillMaxWidth()')
           s = s.replace('Worlds { page = "home" } { worldId = it; page = "levels" }', 'Worlds(back = { page = "home" }, choose = { worldId = it; page = "levels" })')
+          s = s.replace('Levels(WORLDS[worldId], unlocked, { page = "worlds" }) { level = it; page = "game" }', 'Levels(world = WORLDS[worldId], unlocked = unlocked, back = { page = "worlds" }, choose = { level = it; page = "game" })')
           s = s.replace('AnimatedVisibility(visible = burst, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) { Text("💥", fontSize = 58.sp) }', 'if (burst) Text("💥", Modifier.align(Alignment.Center), fontSize = 58.sp)')
           s = s.replace('@Composable private fun Info(', '@Composable private fun RowScope.Info(')
           s = s.replace('AnimatedVisibility(burst,enter=fadeIn(tween(80))+scaleIn(tween(150)),exit=fadeOut(tween(200))+scaleOut(tween(200)),modifier=Modifier.align(Alignment.Center)){Text("💥✨",fontSize=78.sp)}', 'if(burst){Text("💥✨",Modifier.align(Alignment.Center),fontSize=78.sp)}')

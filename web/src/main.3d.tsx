@@ -10,18 +10,34 @@ type World=keyof typeof worlds
 type Config={stones:number;kinds:number;moves:number;layers:number}
 const pack={fruit:['strawberry','banana','grapes','lemon','watermelon','apple-core','carrot','mushroom-gills','berry-bush','flowers','sprout','pineapple','pear','peach','orange','cherry','coconut','corn'],crystal:['crystal-cluster','crystal-shine','topaz','minerals','crystal-wand','crystal-ball','diamond','emerald','ruby','sapphire','amethyst','gem','ore','gold-nuggets','gold-bar','jewel-crown','engagement-ring','treasure-map'],magic:['magic-potion','crystal-ball','crystal-wand','spell-book','wizard-staff','fairy-wand','portal','magic-swirl','rune-stone','treasure-map','enchanted-shield','potion-ball','scroll-unfurled','wizard-hat','cauldron','magic-hat','crystal-eye','glowing-hands'],space:['rocket','astronaut-helmet','moon','sun','planet-core','saturn','ufo','alien-stare','meteor','comet-spark','galaxy','space-shuttle','satellite','space-suit','asteroid','telescope','star-cycle','solar-system'],friends:['cat','dog','fox','rabbit','bear-face','owl','frog','butterfly','fish','bird','hedgehog','squirrel','mouse','panda','penguin','turtle','wolf-head','paw-heart'],ancient:['ankh','scarab-beetle','sphinx','pyramid','greek-temple','laurel-crown','amphora','hourglass','hieroglyph-y','roman-toga','stone-tablet','egyptian-walk','pharaoh','mummy-head','ancient-ruins','coliseum','gorgon','medusa-head'],nature:['sprout','flowers','tree','mountain','volcano','leaf','acorn','pine-tree','river','water-drop','fire','wind','cloud','snowflake','sun','rain','rainbow','mushroom-gills'],season:['snowflake','falling-leaf','blossom','sun','cloud','rain','rainbow','wind','icicles-aura','autumn-leaf','spring','summer','falling-star','thunderstorm','mist','temperature-hot','temperature-cold','weather-vane'],collection:['compass','crown','treasure-map','key','chest','gem','trophy','coin-purse','star-medal','dice-six-faces','target','scroll-unfurled','medal','gold-stack','lock','map-marker','crystal-trophy','laurel-trophy']} as const
 const worlds={Meyve:{title:'Meyve Bahçesi',tagline:'Tatlı eşleşmeler',icons:pack.fruit,colors:['#ef6680','#f7bb50','#63cf7d','#4faee9','#a37cf1','#ec8b59'],bg:'orchard',table:'#182419',accent:'#78d879'},Kristal:{title:'Kristal Dünyası',tagline:'Parla ve patla',icons:pack.crystal,colors:['#4baeff','#5978ff','#55d59d','#ad66ff','#ff6885','#e7be51'],bg:'crystal',table:'#101a31',accent:'#67cfff'},Sihir:{title:'Sihirli Objeler',tagline:'Büyük maceralar',icons:pack.magic,colors:['#9b70ef','#5e9dff','#ce6fe0','#78dbcf','#dd9b5d','#8784dc'],bg:'magic',table:'#1a1029',accent:'#bd78ff'},Kozmik:{title:'Kozmik Serüven',tagline:'Parlak üçlüler',icons:pack.space,colors:['#4ca8ff','#7e78ff','#6a9aff','#69d5ac','#ffc857','#ba86ff'],bg:'space',table:'#080d20',accent:'#6c9dff'},Dostlar:{title:'Sevimli Dostlar',tagline:'Tatlı karakterler',icons:pack.friends,colors:['#ef8ea5','#b7a57e','#7e99cf','#af81e2','#e97878','#75c99e'],bg:'friends',table:'#211c18',accent:'#ffad7e'},Antik:{title:'Antik Semboller',tagline:'Zamanı aşanlar',icons:pack.ancient,colors:['#d5ac58','#6c98c7','#d7b76c','#8c7454','#63a27c','#b88655'],bg:'ancient',table:'#241c14',accent:'#d5ac58'},Dogal:{title:'Doğa Elementleri',tagline:'Doğanın gücü',icons:pack.nature,colors:['#63d17c','#4caee4','#ed6d5e','#7e9ef0','#9d8465','#e18bb1'],bg:'nature',table:'#142218',accent:'#67d47d'},Mevsim:{title:'Mevsimler',tagline:'Her mevsim farklı',icons:pack.season,colors:['#71aef0','#ee9ab9','#ffc85a','#e18a67','#c87957','#83a8d9'],bg:'season',table:'#18202a',accent:'#9ac8ff'},Koleksiyon:{title:'Özel Koleksiyon',tagline:'TRIPLIX özel',icons:pack.collection,colors:['#e0b74f','#e66f85','#57a9ed','#62ca90','#f4ba4f','#9b7be9'],bg:'collection',table:'#211b12',accent:'#f0c85b'}} as const
-function config(level:number):Config{const safe=Math.max(1,Math.min(60,level)),stones=Math.min(66,27+Math.floor((safe-1)/4)*3),kinds=Math.min(18,Math.max(3,Math.ceil(stones/3))),layers=safe<6?2:safe<18?3:safe<34?4:safe<49?5:6;return{stones,kinds,moves:stones+5,layers}}
+function config(level:number):Config{
+ const safe=Math.max(1,Math.min(60,level))
+ const stones=Math.min(66,27+Math.floor((safe-1)/4)*3)
+ const kinds=stones/3
+ const layers=safe<6?2:safe<18?3:safe<34?4:safe<49?5:6
+ return{stones,kinds,moves:stones+6,layers}
+}
 function makeBoard(seed:number,level:number):ThreeStone[]{
  const c=config(level),out:ThreeStone[]=[]
- const candidates=Array.from({length:49},(_,i)=>{const x=i%7-3,y=Math.floor(i/7)-3;return{x,y,d:Math.max(Math.abs(x),Math.abs(y))}})
- const weights=Array.from({length:c.layers},(_,i)=>Math.max(1,c.layers-i)),total=weights.reduce((a,b)=>a+b,0)
+ const positions=Array.from({length:49},(_,i)=>({x:i%7,y:Math.floor(i/7)}))
+   .sort((a,b)=>Math.hypot(a.x-3,a.y-3)-Math.hypot(b.x-3,b.y-3))
+ const weights=Array.from({length:c.layers},(_,i)=>Math.pow(.62,i))
+ const total=weights.reduce((a,b)=>a+b,0)
  let remaining=c.stones
  for(let layer=0;layer<c.layers;layer++){
-  const count=layer===c.layers-1?remaining:Math.min(24,Math.max(3,Math.round(c.stones*weights[layer]/total)));remaining-=count
-  const radius=Math.max(1,3-Math.floor(layer/2))
-  const pool=candidates.filter(p=>p.d<=radius).sort((a,b)=>{const ka=(a.x*17+a.y*31+seed*13+layer*7)%97,kb=(b.x*17+b.y*31+seed*13+layer*7)%97;return a.d-b.d||ka-kb})
-  for(let i=0;i<count;i++){const p=pool[i%pool.length],g=out.length;out.push({id:seed*10000+g,kind:Math.floor(g/3)%c.kinds,x:p.x+3,y:p.y+3,layer})}
+   const count=layer===c.layers-1?remaining:Math.max(1,Math.round(c.stones*weights[layer]/total))
+   remaining-=count
+   for(let i=0;i<count;i++){
+     const p=positions[i]
+     out.push({id:seed*10000+out.length,kind:0,x:p.x,y:p.y,layer})
+   }
  }
+ const kinds=Array.from({length:c.stones},(_,i)=>Math.floor(i/3))
+ for(let i=kinds.length-1;i>0;i--){
+   const j=Math.floor((((Math.sin(seed*131+i*17+level*43)*10000)%1)+1)%1*(i+1))
+   ;[kinds[i],kinds[j]]=[kinds[j],kinds[i]]
+ }
+ out.forEach((stone,i)=>stone.kind=kinds[i])
  return out
 }
 const icon=(name:string)=>`game-icons:${name}`

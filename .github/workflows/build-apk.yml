@@ -32,14 +32,10 @@ jobs:
 
           p = Path('app/src/main/java/com/triplix/app/TriplixV4.kt')
           s = p.read_text()
-
-          # Compose saveable lives in androidx.compose.runtime.saveable.
           s = s.replace(
               'import androidx.compose.runtime.rememberSaveable',
               'import androidx.compose.runtime.saveable.rememberSaveable'
           )
-
-          # Kotlin/Compose 2.x is strict about Row/Column positional argument order.
           fixes = {
               'Column(Modifier.fillMaxSize(), Alignment.CenterHorizontally, Arrangement.Center)': 'Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center)',
               'Column(Modifier.fillMaxSize().padding(14.dp), Alignment.CenterHorizontally, Arrangement.Center)': 'Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center)',
@@ -49,11 +45,63 @@ jobs:
           }
           for old, new in fixes.items():
               s = s.replace(old, new)
-
           s = s.replace('@Composable private fun Mini4(', '@Composable private fun RowScope.Mini4(')
           s = s.replace('AnimatedVisibility(burst){Text("💥✨",fontSize=60.sp)}', 'if(burst){Text("💥✨",Modifier.align(Alignment.Center),fontSize=60.sp)}')
-
           p.write_text(s)
+
+          # V6: give every selected gem a tactile pop, glow and sparkle.
+          v6 = Path('app/src/main/java/com/triplix/app/TriplixV6.kt')
+          if v6.exists():
+              s = v6.read_text()
+              s = s.replace('import androidx.compose.foundation.background', 'import androidx.compose.animation.core.Animatable\nimport androidx.compose.animation.core.tween\nimport androidx.compose.foundation.background')
+              s = s.replace('import androidx.compose.runtime.Composable', 'import androidx.compose.runtime.Composable\nimport androidx.compose.runtime.LaunchedEffect')
+              old = '''@Composable private fun GemV6(type: Int, selected: Boolean, modifier: Modifier, click: () -> Unit) { val color = GemColors[type]; Box(modifier.clip(RoundedCornerShape(13.dp)).background(color.copy(if (selected) .35f else .18f)).border(if (selected) 2.dp else 1.dp, if (selected) Color.White else color.copy(.43f), RoundedCornerShape(13.dp)).clickable(onClick = click), contentAlignment = Alignment.Center) { Text(Gems[type], color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black); if (selected) Text("✦", color = Color.White, fontSize = 9.sp, modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)) } }'''
+              new = '''@Composable
+private fun GemV6(type: Int, selected: Boolean, modifier: Modifier, click: () -> Unit) {
+    val color = GemColors[type]
+    val pop = androidx.compose.runtime.remember { Animatable(1f) }
+    val glow = androidx.compose.runtime.remember { Animatable(0f) }
+
+    LaunchedEffect(selected) {
+        if (selected) {
+            pop.snapTo(.78f)
+            glow.snapTo(0f)
+            pop.animateTo(1.10f, tween(150))
+            pop.animateTo(1.02f, tween(110))
+            pop.animateTo(1f, tween(90))
+            glow.animateTo(1f, tween(120))
+            glow.animateTo(0f, tween(260))
+        } else {
+            pop.animateTo(1f, tween(100))
+            glow.animateTo(0f, tween(100))
+        }
+    }
+
+    Box(
+        modifier
+            .scale(pop.value)
+            .clip(RoundedCornerShape(13.dp))
+            .background(color.copy(if (selected) .30f else .18f))
+            .border(if (selected) 2.dp else 1.dp, if (selected) Color.White else color.copy(.43f), RoundedCornerShape(13.dp))
+            .clickable(onClick = click),
+        contentAlignment = Alignment.Center
+    ) {
+        if (glow.value > 0f) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .border(3.dp, Color.White.copy(.28f * glow.value), RoundedCornerShape(13.dp))
+            )
+            Text("✦", color = Color.White.copy(.9f * glow.value), fontSize = 14.sp, modifier = Modifier.align(Alignment.TopEnd).padding(4.dp))
+            Text("✦", color = Color.White.copy(.65f * glow.value), fontSize = 10.sp, modifier = Modifier.align(Alignment.BottomStart).padding(4.dp))
+        }
+        Text(Gems[type], color = Color.White, fontSize = if (selected) 26.sp else 24.sp, fontWeight = FontWeight.Black)
+    }
+}'''
+              if old not in s:
+                  raise SystemExit('V6 GemV6 block not found')
+              s = s.replace(old, new)
+              v6.write_text(s)
           PY
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug

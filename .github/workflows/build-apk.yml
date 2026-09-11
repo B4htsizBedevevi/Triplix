@@ -25,9 +25,8 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          # V2/V3 were prototypes and are no longer entry points. Keep the
-          # repository history, but exclude their unfinished Kotlin sources
-          # from the production build so one old screen cannot break the APK.
+          # V2/V3 are historical prototypes. Keep them in git history, but
+          # exclude them from the production compilation unit.
           for name in ('TriplixV2.kt', 'TriplixV3.kt'):
               p = Path('app/src/main/java/com/triplix/app') / name
               if p.exists():
@@ -36,8 +35,16 @@ jobs:
           p = Path('app/src/main/java/com/triplix/app/TriplixV4.kt')
           s = p.read_text()
 
-          # Repair the V4 prototype's extra closing brace.
-          s = s.replace('   }\n  }\n }\n }\n}\n\n@Composable private fun Top4', '   }\n  }\n }\n}\n\n@Composable private fun Top4')
+          # Kotlin/Compose 2.x is strict about Row/Column positional argument order.
+          fixes = {
+              'Column(Modifier.fillMaxSize(), Alignment.CenterHorizontally, Arrangement.Center)': 'Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center)',
+              'Column(Modifier.fillMaxSize().padding(14.dp), Alignment.CenterHorizontally, Arrangement.Center)': 'Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center)',
+              'Row(Modifier.padding(14.dp), Alignment.CenterVertically)': 'Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically)',
+              'Row(Modifier.fillMaxWidth(), Alignment.CenterVertically)': 'Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically)',
+              'Row(Modifier.fillMaxWidth().height(52.dp), Alignment.CenterVertically)': 'Row(Modifier.fillMaxWidth().height(52.dp), verticalAlignment = Alignment.CenterVertically)',
+          }
+          for old, new in fixes.items():
+              s = s.replace(old, new)
 
           # Mini4 is used inside a Row and therefore needs RowScope for weight().
           s = s.replace('@Composable private fun Mini4(', '@Composable private fun RowScope.Mini4(')

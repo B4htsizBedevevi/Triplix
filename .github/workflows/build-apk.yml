@@ -25,8 +25,6 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          # V2/V3 are historical prototypes. Keep them in git history, but
-          # exclude them from the production compilation unit.
           for name in ('TriplixV2.kt', 'TriplixV3.kt'):
               p = Path('app/src/main/java/com/triplix/app') / name
               if p.exists():
@@ -34,6 +32,12 @@ jobs:
 
           p = Path('app/src/main/java/com/triplix/app/TriplixV4.kt')
           s = p.read_text()
+
+          # Compose saveable lives in androidx.compose.runtime.saveable.
+          s = s.replace(
+              'import androidx.compose.runtime.rememberSaveable',
+              'import androidx.compose.runtime.saveable.rememberSaveable'
+          )
 
           # Kotlin/Compose 2.x is strict about Row/Column positional argument order.
           fixes = {
@@ -46,10 +50,7 @@ jobs:
           for old, new in fixes.items():
               s = s.replace(old, new)
 
-          # Mini4 is used inside a Row and therefore needs RowScope for weight().
           s = s.replace('@Composable private fun Mini4(', '@Composable private fun RowScope.Mini4(')
-
-          # Avoid AnimatedVisibility receiver inference in the board overlay.
           s = s.replace('AnimatedVisibility(burst){Text("💥✨",fontSize=60.sp)}', 'if(burst){Text("💥✨",Modifier.align(Alignment.Center),fontSize=60.sp)}')
 
           p.write_text(s)

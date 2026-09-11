@@ -26,184 +26,63 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.random.Random
+import androidx.compose.ui.zIndex
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent { TriplixApp() }
-    }
+class MainActivity: ComponentActivity(){override fun onCreate(b:Bundle?){super.onCreate(b);setContent{App()}}}
+private val BG=Color(0xFF050711);private val PANEL=Color(0xFF111629);private val PANEL2=Color(0xFF1A2140);private val TXT=Color(0xFFF8FAFF);private val MUTED=Color(0xFF9DA8C5);private val ACC=Color(0xFF795BFF);private val GOLD=Color(0xFFFFD45B);private val RED=Color(0xFFFF5E76)
+private data class World(val id:Int,val name:String,val icon:String,val tiles:List<String>,val colors:List<Color>)
+private data class Tile(val id:Int,val type:Int,val x:Float,val y:Float,val layer:Int,val removed:Boolean=false)
+private data class Snap(val board:List<Tile>,val tray:List<Int>,val score:Int,val combo:Int,val coins:Int)
+private val WORLDS=listOf(
+ World(0,"Meyve Bahçesi","🍓",listOf("🍓","🍌","🍇","🍎","🍊","🍉"),listOf(Color(0xFFFF5570),Color(0xFFFFC94D),Color(0xFFAA67E8),Color(0xFFE84E62),Color(0xFFFF8A3D),Color(0xFF45C96B))),
+ World(1,"Kristal Dünyası","💎",listOf("💎","🔷","🟢","🔮","🟡","💠"),listOf(Color(0xFF54C7FF),Color(0xFF4B8CFF),Color(0xFF42D99A),Color(0xFFB75CFF),Color(0xFFFFC94D),Color(0xFF6A7CFF))),
+ World(2,"Sihirli Objeler","🔮",listOf("🧙","🧪","📖","🗝️","🪄","🔮"),listOf(Color(0xFF9A62FF),Color(0xFF5BE0C2),Color(0xFFE9B35C),Color(0xFFFFC95A),Color(0xFF6D8CFF),Color(0xFFEA63D1))),
+ World(3,"Kozmik Evren","🚀",listOf("🚀","🪐","⭐","☄️","🌙","🌌"),listOf(Color(0xFFFF5E74),Color(0xFF4AA8FF),Color(0xFFFFD45B),Color(0xFFFF8A4D),Color(0xFF9B76FF),Color(0xFF55D8FF))),
+ World(4,"Sevimli Dostlar","🐱",listOf("🐱","🐶","🐼","🐰","🐸","🐧"),listOf(Color(0xFFFFA45B),Color(0xFFB8A38E),Color(0xFF6FA8DC),Color(0xFFFF8FB5),Color(0xFF62D59A),Color(0xFF73B9E8))),
+ World(5,"Antik Semboller","🏺",listOf("☀️","👁️","🔺","🌀","🌿","🜁"),listOf(Color(0xFFE8B45A),Color(0xFF6FC4FF),Color(0xFFFF7E56),Color(0xFFB179FF),Color(0xFF62D29A),Color(0xFFD2A85D))),
+ World(6,"Doğa Elementleri","🌿",listOf("🌿","💧","🔥","🌪️","🪨","🌸"),listOf(Color(0xFF55D77B),Color(0xFF4DA9FF),Color(0xFFFF654F),Color(0xFF71C9FF),Color(0xFF9B8068),Color(0xFFFF7FB2))),
+ World(7,"Mevsimler","❄️",listOf("❄️","🌸","☀️","🍁","🌧️","🌙"),listOf(Color(0xFF73CFFF),Color(0xFFFF8CB8),Color(0xFFFFC94D),Color(0xFFFF8A4D),Color(0xFF6CA7D9),Color(0xFF9B82FF))),
+ World(8,"Özel Koleksiyon","👑",listOf("👑","❤️","⚡","💜","♾️","🌟"),listOf(Color(0xFFFFC84D),Color(0xFFFF5870),Color(0xFF62CFFF),Color(0xFFB35CFF),Color(0xFF5CD9B0),Color(0xFFFFD75C))) )
+
+@Composable fun App(){val c=LocalContext.current;val p=remember{c.getSharedPreferences("triplix",Context.MODE_PRIVATE)};var page by rememberSaveable{mutableStateOf("home")};var wid by rememberSaveable{mutableIntStateOf(0)};var level by rememberSaveable{mutableIntStateOf(1)};var coins by rememberSaveable{mutableIntStateOf(p.getInt("coins",395))};var games by rememberSaveable{mutableIntStateOf(p.getInt("games",0))};var streak by rememberSaveable{mutableIntStateOf(p.getInt("streak",1))};var mission by rememberSaveable{mutableIntStateOf(p.getInt("mission",0))};var claimed by rememberSaveable{mutableStateOf(p.getBoolean("daily",false))};fun save(){p.edit().putInt("coins",coins).putInt("games",games).putInt("streak",streak).putInt("mission",mission).putBoolean("daily",claimed).apply()};MaterialTheme(colorScheme=darkColorScheme()){Surface(Modifier.fillMaxSize(),color=BG){when(page){"home"->Home(coins,streak,games,mission,claimed,{page="worlds"},{if(!claimed){coins+=50+streak*10;streak++;claimed=true;save()}},{if(mission>=5){coins+=100;mission=0;save()}});"worlds"->Worlds(wid,{page="home"}){wid=it;page="levels"};"levels"->Levels(WORLDS[wid],{page="worlds"}){level=it;page="game"};else->Game(WORLDS[wid],level,coins,{page="levels"},{earned->coins+=earned;games++;mission=(mission+1).coerceAtMost(5);save()},{level=(level+1).coerceAtMost(50)})}}}}
+
+@Composable private fun Home(coins:Int,streak:Int,games:Int,mission:Int,claimed:Boolean,play:()->Unit,daily:()->Unit,reward:()->Unit){val inf=rememberInfiniteTransition(label="logo");val pulse by inf.animateFloat(.97f,1.04f,infiniteRepeatable(tween(1000),RepeatMode.Reverse),label="p");LazyColumn(Modifier.fillMaxSize().padding(16.dp),contentPadding=PaddingValues(bottom=24.dp)){item{Row(Modifier.fillMaxWidth(),Arrangement.SpaceBetween,Alignment.CenterVertically){Column{Text("HOŞ GELDİN 👋",color=MUTED,fontSize=11.sp,fontWeight=FontWeight.Bold);Text("TRIPLIX",color=TXT,fontSize=28.sp,fontWeight=FontWeight.Black)};Pill("🪙 $coins",GOLD)};Spacer(Modifier.height(14.dp));Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(30.dp)).background(Brush.linearGradient(listOf(Color(0xFF202B61),Color(0xFF38205F),Color(0xFF0D3049)))).border(1.dp,ACC.copy(.5f),RoundedCornerShape(30.dp)),Alignment.Center){Column(horizontalAlignment=Alignment.CenterHorizontally){Box(Modifier.size(78.dp).scale(pulse).clip(RoundedCornerShape(24.dp)).background(Brush.linearGradient(listOf(Color(0xFFFFB93E),Color(0xFFFF6D55)))),Alignment.Center){Text("3",color=Color.White,fontSize=42.sp,fontWeight=FontWeight.Black)};Text("TRIPLIX",color=TXT,fontSize=36.sp,fontWeight=FontWeight.Black);Text("AYNI 3'Ü BİRLEŞTİR • DAHA FAZLASINI KEŞFET",color=Color.White.copy(.78f),fontSize=9.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.height(10.dp));Text("✨ KATMANLI 3D TAŞLAR • PARÇALAMA EFEKTLERİ",color=GOLD,fontSize=9.sp,fontWeight=FontWeight.Black)}};Spacer(Modifier.height(12.dp));Button(play,Modifier.fillMaxWidth().height(57.dp),shape=RoundedCornerShape(18.dp),colors=ButtonDefaults.buttonColors(containerColor=ACC)){Text("🌎 DÜNYANI SEÇ VE OYNA",fontSize=16.sp,fontWeight=FontWeight.Black)};Spacer(Modifier.height(12.dp))};item{Row(Modifier.fillMaxWidth(),Arrangement.spacedBy(9.dp)){Stat("🔥","$streak","Seri",Modifier.weight(1f));Stat("⭐","$games","Oyun",Modifier.weight(1f));Stat("🌎","9","Dünya",Modifier.weight(1f))};Spacer(Modifier.height(12.dp))};item{Surface(color=PANEL,shape=RoundedCornerShape(22.dp),modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Row(Modifier.fillMaxWidth(),Arrangement.SpaceBetween,Alignment.CenterVertically){Column{Text("🎁 GÜNLÜK ÖDÜL",color=TXT,fontWeight=FontWeight.Black);Text("Serini koru, ödülü kap!",color=MUTED,fontSize=11.sp)};Button(daily,enabled=!claimed,shape=RoundedCornerShape(13.dp),contentPadding=PaddingValues(horizontal=12.dp,vertical=7.dp)){Text(if(claimed)"ALINDI ✓"else"+ ÖDÜL",fontSize=11.sp,fontWeight=FontWeight.Black)}};Spacer(Modifier.height(12.dp));Row(Modifier.fillMaxWidth(),Arrangement.spacedBy(6.dp)){(1..7).forEach{d->Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(if(d<=streak)ACC.copy(.28f)else Color.White.copy(.04f)).border(1.dp,if(d<=streak)ACC else Color.White.copy(.07f),RoundedCornerShape(10.dp)),Alignment.Center){Text(if(d==7)"🎁"else"$d",color=if(d<=streak)GOLD else MUTED,fontSize=10.sp,fontWeight=FontWeight.Black)}}}}};Spacer(Modifier.height(12.dp))};item{Surface(color=PANEL,shape=RoundedCornerShape(22.dp),modifier=Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Row(Modifier.fillMaxWidth(),Arrangement.SpaceBetween){Text("🎯 GÜNLÜK GÖREV",color=TXT,fontWeight=FontWeight.Black);Text("$mission/5",color=GOLD,fontWeight=FontWeight.Black)};Spacer(Modifier.height(7.dp));Text("5 bölüm tamamla ve 100 🪙 kazan",color=MUTED,fontSize=11.sp);Spacer(Modifier.height(9.dp));LinearProgressIndicator(progress={mission/5f},Modifier.fillMaxWidth().height(7.dp));Spacer(Modifier.height(10.dp));Button(reward,enabled=mission>=5,Modifier.fillMaxWidth(),shape=RoundedCornerShape(13.dp)){Text(if(mission>=5)"🎁 ÖDÜLÜ AL"else"GÖREVE DEVAM ET",fontWeight=FontWeight.Black)}}}}}}
+@Composable private fun Pill(t:String,c:Color){Surface(color=Color.White.copy(.06f),shape=RoundedCornerShape(15.dp)){Text(t,Modifier.padding(horizontal=11.dp,vertical=8.dp),color=c,fontWeight=FontWeight.Black)}}
+@Composable private fun Stat(i:String,v:String,l:String,m:Modifier){Surface(color=PANEL,shape=RoundedCornerShape(17.dp),modifier=m.height(75.dp)){Column(Modifier.padding(8.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){Text(i,fontSize=17.sp);Text(v,color=TXT,fontWeight=FontWeight.Black);Text(l,color=MUTED,fontSize=9.sp)}}}
+
+@Composable private fun Worlds(sel:Int,back:()->Unit,choose:(Int)->Unit){Column(Modifier.fillMaxSize().padding(16.dp)){Top("DÜNYALAR","Her dünya yeni taşlar",back);Spacer(Modifier.height(12.dp));LazyVerticalGrid(GridCells.Fixed(2),Modifier.fillMaxSize(),contentPadding=PaddingValues(bottom=20.dp),verticalArrangement=Arrangement.spacedBy(12.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)){items(WORLDS){w->Surface(onClick={choose(w.id)},color=PANEL,shape=RoundedCornerShape(22.dp),modifier=Modifier.height(156.dp).border(1.dp,if(sel==w.id)ACC.copy(.7f)else Color.White.copy(.07f),RoundedCornerShape(22.dp))){Column(Modifier.fillMaxSize().padding(12.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){Box(Modifier.size(60.dp).clip(RoundedCornerShape(19.dp)).background(Brush.linearGradient(w.colors.take(3))),Alignment.Center){Text(w.icon,fontSize=31.sp)};Spacer(Modifier.height(8.dp));Text(w.name,color=TXT,fontWeight=FontWeight.Black,fontSize=13.sp);Text("6 özel taş",color=MUTED,fontSize=9.sp)}}}}}}
+@Composable private fun Levels(w:World,back:()->Unit,go:(Int)->Unit){Column(Modifier.fillMaxSize().padding(16.dp)){Top(w.name.uppercase(),"Katmanları aç, yıldızları topla",back);Spacer(Modifier.height(12.dp));Surface(color=PANEL,shape=RoundedCornerShape(22.dp),modifier=Modifier.fillMaxWidth()){Row(Modifier.padding(14.dp),Alignment.CenterVertically){Box(Modifier.size(64.dp).clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(w.colors.take(3))),Alignment.Center){Text(w.icon,fontSize=34.sp)};Spacer(Modifier.width(12.dp));Column{Text("MACERA HARİTASI",color=TXT,fontWeight=FontWeight.Black);Text("İlk 5 bölüm açık",color=MUTED,fontSize=10.sp)}}};Spacer(Modifier.height(12.dp));LazyVerticalGrid(GridCells.Fixed(3),Modifier.fillMaxSize(),contentPadding=PaddingValues(bottom=20.dp),verticalArrangement=Arrangement.spacedBy(12.dp),horizontalArrangement=Arrangement.spacedBy(12.dp)){items((1..24).toList()){n->val open=n<=5;Surface(onClick={if(open)go(n)},color=if(open)PANEL2 else PANEL,shape=RoundedCornerShape(18.dp),modifier=Modifier.height(92.dp)){Column(Modifier.fillMaxSize(),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){Text(if(open)"★"else"🔒",color=if(open)GOLD else MUTED,fontSize=22.sp);Text("Bölüm $n",color=if(open)TXT else MUTED,fontSize=11.sp,fontWeight=FontWeight.Black)}}}}}}
+@Composable private fun Top(t:String,s:String,back:()->Unit){Row(Modifier.fillMaxWidth(),Alignment.CenterVertically){Button(back,shape=RoundedCornerShape(13.dp),contentPadding=PaddingValues(0.dp),modifier=Modifier.size(42.dp)){Text("‹",fontSize=27.sp)};Spacer(Modifier.width(9.dp));Column{Text(t,color=TXT,fontWeight=FontWeight.Black,fontSize=18.sp);Text(s,color=MUTED,fontSize=10.sp)}}}
+
+private fun board():List<Tile>{val b=listOf(1f to 1f,2f to 1f,3f to 1f,4f to 1f,.5f to 2f,1.5f to 2f,2.5f to 2f,3.5f to 2f,4.5f to 2f,5.5f to 2f,.5f to 3f,1.5f to 3f,2.5f to 3f,3.5f to 3f,4.5f to 3f,5.5f to 3f,1f to 4f,2f to 4f,3f to 4f,4f to 4f);val m=listOf(1.2f to 1.65f,2.2f to 1.65f,3.2f to 1.65f,4.2f to 1.65f,1.2f to 2.65f,2.2f to 2.65f,3.2f to 2.65f,4.2f to 2.65f,1.2f to 3.65f,3.2f to 3.65f);val top=listOf(1.7f to 2.1f,2.7f to 2.1f,3.7f to 2.1f,1.7f to 3.1f,2.7f to 3.1f,3.7f to 3.1f);val types=listOf(0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7,7,8,8,8,9,9,9,10,10,10,11,11,11);var id=0;return buildList{top.forEachIndexed{i,p->add(Tile(id++,types[i],p.first,p.second,2))};m.forEachIndexed{i,p->add(Tile(id++,types[6+i],p.first,p.second,1))};b.forEachIndexed{i,p->add(Tile(id++,types[16+i],p.first,p.second,0))}}}
+private fun access(t:Tile,b:List<Tile>)=!t.removed&&b.none{o->!o.removed&&o.layer>t.layer&&abs(o.x-t.x)<.92f&&abs(o.y-t.y)<.92f}
+
+@Composable private fun Game(w:World,level:Int,startCoins:Int,back:()->Unit,won:(Int)->Unit,next:()->Unit){val view=LocalView.current;val den=LocalDensity.current;val scope=rememberCoroutineScope();var b by remember(level,w.id){mutableStateOf(board())};val tray=remember(level,w.id){mutableStateListOf<Int>()};val hist=remember(level,w.id){mutableStateListOf<Snap>()};var score by remember(level,w.id){mutableIntStateOf(0)};var coins by remember(level,w.id){mutableIntStateOf(startCoins)};var combo by remember(level,w.id){mutableIntStateOf(0)};var shake by remember{mutableFloatStateOf(0f)};var burst by remember{mutableStateOf(false)};var msg by remember{mutableStateOf("3 aynı taşı bul!")};var win by remember{mutableStateOf(false)};var over by remember{mutableStateOf(false)};var floatScore by remember{mutableIntStateOf(0)}
+ fun snap()=Snap(b.toList(),tray.toList(),score,combo,coins)
+ fun select(t:Tile){if(win||over||!access(t,b)||tray.size>=7)return;hist.add(snap());b=b.map{if(it.id==t.id)it.copy(removed=true)else it};val at=tray.indexOfFirst{it==t.type}.let{if(it<0)tray.size else it+1};tray.add(at,t.type);view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);val n=tray.count{it==t.type};if(n>=3){repeat(3){tray.remove(t.type)};combo++;val g=35+combo*15+level*2;score+=g;coins+=8+combo;floatScore=g;burst=true;view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);scope.launch{shake=1f;delay(140);shake=0f;delay(450);burst=false;floatScore=0}}else msg="${w.tiles[t.type%6]} taşını buldun!";if(b.all{it.removed}){win=true;won(75+level*5)}else if(tray.size>=7)over=true}
+ fun undo(){val s=hist.removeLastOrNull()?:return;b=s.board;tray.clear();tray.addAll(s.tray);score=s.score;combo=s.combo;coins=s.coins;msg="Son hamle geri alındı ↩"}
+ fun shuffle(){if(coins<15||win||over)return;coins-=15;val a=b.filter{!it.removed}.map{it.type}.shuffled();var i=0;b=b.map{if(it.removed)it else it.copy(type=a[i++])};msg="Taşlar yeniden düzenlendi ✨"}
+ fun reset(){b=board();tray.clear();hist.clear();score=0;combo=0;msg="Yeni tur başladı!";win=false;over=false;burst=false}
+ Column(Modifier.fillMaxSize().padding(horizontal=12.dp,vertical=10.dp)){Row(Modifier.fillMaxWidth(),Alignment.CenterVertically){Button(back,shape=RoundedCornerShape(13.dp),contentPadding=PaddingValues(0.dp),modifier=Modifier.size(42.dp)){Text("‹",fontSize=27.sp)};Spacer(Modifier.width(9.dp));Column(Modifier.weight(1f)){Text("BÖLÜM $level",color=TXT,fontWeight=FontWeight.Black,fontSize=17.sp);Text(w.name,color=MUTED,fontSize=10.sp)};Pill("🪙 $coins",GOLD)};Spacer(Modifier.height(7.dp));Row(Modifier.fillMaxWidth(),Arrangement.spacedBy(6.dp)){Mini("⭐","$score",Modifier.weight(1f));Mini("🔥","x$combo",Modifier.weight(1f));Mini("🎯","${b.count{it.removed}}/${b.size}",Modifier.weight(1f));Mini("❤️","3",Modifier.weight(1f))};Spacer(Modifier.height(7.dp));Box(Modifier.fillMaxWidth().height(27.dp).clip(RoundedCornerShape(10.dp)).background(PANEL),Alignment.Center){Text(msg,color=if(combo>1)GOLD else MUTED,fontSize=10.sp,fontWeight=FontWeight.Bold)};Spacer(Modifier.height(7.dp));BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(26.dp)).background(Brush.radialGradient(listOf(Color(0xFF1D2A54),Color(0xFF0A1024),BG))).border(1.dp,ACC.copy(.28f),RoundedCornerShape(26.dp))){val sz=(maxWidth.value/6.5f).dp;val px=with(den){sz.toPx()};Box(Modifier.fillMaxSize().graphicsLayer{translationX=shake*5f}){b.filter{!it.removed}.sortedBy{it.layer}.forEach{t->val ok=access(t,b);Box(Modifier.offset{IntOffset((t.x*px).roundToInt(),(t.y*px).roundToInt())}.size(sz).zIndex(t.layer.toFloat())){Stone(t,w,ok,sz){select(t)}}};if(floatScore>0)Text("+$floatScore ⭐",Modifier.align(Alignment.Center),color=GOLD,fontSize=22.sp,fontWeight=FontWeight.Black);AnimatedVisibility(burst,enter=fadeIn(tween(80))+scaleIn(tween(150)),exit=fadeOut(tween(200))+scaleOut(tween(200)),modifier=Modifier.align(Alignment.Center)){Text("💥✨",fontSize=78.sp)}}};Spacer(Modifier.height(7.dp));Tray(tray,w);Spacer(Modifier.height(7.dp));Row(Modifier.fillMaxWidth(),Arrangement.spacedBy(6.dp)){Action("🔀","Karıştır",coins>=15&&!win&&!over,Modifier.weight(1f)){shuffle()};Action("💡","İpucu",!win&&!over,Modifier.weight(1f)){msg="✨ En üstte parlayan taşı dene!"};Action("↩","Geri Al",hist.isNotEmpty()&&!win&&!over,Modifier.weight(1f)){undo()};Action("❄️","Dondur",!win&&!over,Modifier.weight(1f)){msg="❄️ Katmanlar yavaşladı!"}}}
+ if(win||over)AnimatedVisibility(true,enter=fadeIn(tween(140)),exit=fadeOut(tween(100))){Box(Modifier.fillMaxSize().background(Color.Black.copy(.58f)),Alignment.Center){Surface(color=PANEL,shape=RoundedCornerShape(28.dp),modifier=Modifier.fillMaxWidth(.88f).border(1.dp,if(win)GOLD else RED,RoundedCornerShape(28.dp))){Column(Modifier.padding(22.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(if(win)"🎉 MÜKEMMEL!"else"💥 TEPSİ DOLDU",color=if(win)GOLD else RED,fontSize=26.sp,fontWeight=FontWeight.Black);Spacer(Modifier.height(8.dp));Text(if(win)"Katmanların tamamını açtın!"else"Biraz daha stratejik oyna.",color=TXT,fontWeight=FontWeight.Bold);Spacer(Modifier.height(9.dp));Text("+$score ⭐",color=GOLD,fontSize=18.sp,fontWeight=FontWeight.Black);Spacer(Modifier.height(14.dp));if(win)Button({next();reset()},Modifier.fillMaxWidth(),shape=RoundedCornerShape(15.dp)){Text("SONRAKİ BÖLÜM →",fontWeight=FontWeight.Black)};Spacer(Modifier.height(7.dp));Button(reset,Modifier.fillMaxWidth(),shape=RoundedCornerShape(15.dp),colors=ButtonDefaults.buttonColors(containerColor=PANEL2)){Text(if(win)"TEKRAR OYNA"else"TEKRAR DENE",fontWeight=FontWeight.Black)}}}}}}
 }
 
-private val Bg = Color(0xFF070914)
-private val Panel = Color(0xFF111629)
-private val Panel2 = Color(0xFF171D32)
-private val TextMain = Color(0xFFF7F9FF)
-private val TextMuted = Color(0xFF9CA7C2)
-private val Accent = Color(0xFF7C5CFF)
-private val Gold = Color(0xFFFFD45B)
-
-private data class World(
-    val id: Int,
-    val name: String,
-    val subtitle: String,
-    val icon: String,
-    val tiles: List<String>,
-    val colors: List<Color>
-)
-
-private val Worlds = listOf(
-    World(0, "Meyve Bahçesi", "Tatlı eşleşmeler", "🍓", listOf("🍓", "🍌", "🍇", "🍎", "🍊", "🍉"), listOf(Color(0xFFFF5D76), Color(0xFFFFC94D), Color(0xFFAA67E8), Color(0xFFE94B5F), Color(0xFFFF8A3D), Color(0xFF48C96B))),
-    World(1, "Kristal Dünyası", "Parla • Eşleştir • Patlat", "💎", listOf("💎", "🔷", "🟢", "🔮", "🟡", "💠"), listOf(Color(0xFF54C7FF), Color(0xFF4B8CFF), Color(0xFF42D99A), Color(0xFFB75CFF), Color(0xFFFFC94D), Color(0xFF6A7CFF))),
-    World(2, "Sihirli Objeler", "Büyülü maceralar", "🔮", listOf("🧙", "🧪", "📖", "🗝️", "🪄", "🔮"), listOf(Color(0xFF9A62FF), Color(0xFF5BE0C2), Color(0xFFE9B35C), Color(0xFFFFC95A), Color(0xFF6D8CFF), Color(0xFFEA63D1))),
-    World(3, "Kozmik Evren", "Uzayın derinlikleri", "🚀", listOf("🚀", "🪐", "⭐", "☄️", "🌙", "🌌"), listOf(Color(0xFFFF5E74), Color(0xFF4AA8FF), Color(0xFFFFD45B), Color(0xFFFF8A4D), Color(0xFF9B76FF), Color(0xFF55D8FF))),
-    World(4, "Sevimli Dostlar", "Tatlı arkadaşlar", "🐱", listOf("🐱", "🐶", "🐼", "🐰", "🐸", "🐧"), listOf(Color(0xFFFFA45B), Color(0xFFB8A38E), Color(0xFF6FA8DC), Color(0xFFFF8FB5), Color(0xFF62D59A), Color(0xFF73B9E8))),
-    World(5, "Antik Semboller", "Zamanı aşan taşlar", "🏺", listOf("☀️", "👁️", "🔺", "🌀", "🌿", "🜁"), listOf(Color(0xFFE8B45A), Color(0xFF6FC4FF), Color(0xFFFF7E56), Color(0xFFB179FF), Color(0xFF62D29A), Color(0xFFD2A85D))),
-    World(6, "Doğa Elementleri", "Doğanın gücü", "🌿", listOf("🌿", "💧", "🔥", "🌪️", "🪨", "🌸"), listOf(Color(0xFF55D77B), Color(0xFF4DA9FF), Color(0xFFFF654F), Color(0xFF71C9FF), Color(0xFF9B8068), Color(0xFFFF7FB2))),
-    World(7, "Mevsimler", "Her mevsim başka", "❄️", listOf("❄️", "🌸", "☀️", "🍁", "🌧️", "🌙"), listOf(Color(0xFF73CFFF), Color(0xFFFF8CB8), Color(0xFFFFC94D), Color(0xFFFF8A4D), Color(0xFF6CA7D9), Color(0xFF9B82FF))),
-    World(8, "Özel Koleksiyon", "TRIPLIX'in nadirleri", "👑", listOf("👑", "❤️", "⚡", "💜", "♾️", "🌟"), listOf(Color(0xFFFFC84D), Color(0xFFFF5870), Color(0xFF62CFFF), Color(0xFFB35CFF), Color(0xFF5CD9B0), Color(0xFFFFD75C)))
-)
-
-private data class Tile(val id: Int, val type: Int)
-
-@Composable
-fun TriplixApp() {
-    val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("triplix", Context.MODE_PRIVATE) }
-    var screen by rememberSaveable { mutableStateOf("home") }
-    var worldId by rememberSaveable { mutableIntStateOf(0) }
-    var level by rememberSaveable { mutableIntStateOf(1) }
-    var coins by rememberSaveable { mutableIntStateOf(prefs.getInt("coins", 395)) }
-    var streak by rememberSaveable { mutableIntStateOf(prefs.getInt("streak", 1)) }
-    var games by rememberSaveable { mutableIntStateOf(prefs.getInt("games", 0)) }
-    var dailyClaimed by rememberSaveable { mutableStateOf(prefs.getBoolean("daily_claimed", false)) }
-    var missionProgress by rememberSaveable { mutableIntStateOf(prefs.getInt("mission", 0)) }
-    val world = Worlds[worldId]
-
-    fun save() {
-        prefs.edit().putInt("coins", coins).putInt("streak", streak).putInt("games", games).putBoolean("daily_claimed", dailyClaimed).putInt("mission", missionProgress).apply()
-    }
-
-    MaterialTheme(colorScheme = darkColorScheme()) {
-        Surface(Modifier.fillMaxSize(), color = Bg) {
-            when (screen) {
-                "home" -> HomeScreen(coins, streak, games, missionProgress, dailyClaimed, onPlay = { screen = "worlds" }, onDaily = {
-                    if (!dailyClaimed) { coins += 50 + streak * 10; streak += 1; dailyClaimed = true; save() }
-                }, onMission = {
-                    if (missionProgress >= 5) { coins += 100; missionProgress = 0; save() }
-                })
-                "worlds" -> WorldScreen(Worlds, worldId, { screen = "home" }) { id -> worldId = id; screen = "levels" }
-                "levels" -> LevelScreen(world, { screen = "worlds" }) { n -> level = n; screen = "game" }
-                else -> GameScreen(world, level, coins, { screen = "levels" }, { earned -> coins += earned; games += 1; missionProgress = (missionProgress + 1).coerceAtMost(5); save() }, { level = (level + 1).coerceAtMost(50) })
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeScreen(coins: Int, streak: Int, games: Int, mission: Int, dailyClaimed: Boolean, onPlay: () -> Unit, onDaily: () -> Unit, onMission: () -> Unit) {
-    val infinite = rememberInfiniteTransition(label = "home")
-    val pulse by infinite.animateFloat(.97f, 1.04f, infiniteRepeatable(tween(1100), RepeatMode.Reverse), label = "pulse")
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column { Text("HOŞ GELDİN 👋", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold); Text("TRIPLIX", color = TextMain, fontSize = 28.sp, fontWeight = FontWeight.Black) }
-                Surface(color = Color.White.copy(.06f), shape = RoundedCornerShape(15.dp)) { Text("🪙 $coins", Modifier.padding(horizontal = 11.dp, vertical = 8.dp), color = Gold, fontWeight = FontWeight.Black) }
-            }
-            Spacer(Modifier.height(14.dp))
-            Box(Modifier.fillMaxWidth().height(205.dp).clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(Color(0xFF202A5B), Color(0xFF351D61), Color(0xFF102D4C)))).border(1.dp, Accent.copy(.35f), RoundedCornerShape(28.dp)), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.size(74.dp).scale(pulse).clip(RoundedCornerShape(24.dp)).background(Brush.linearGradient(listOf(Accent, Color(0xFF4BC4FF)))), contentAlignment = Alignment.Center) { Text("3", color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.Black) }
-                    Spacer(Modifier.height(8.dp)); Text("TRIPLIX", color = TextMain, fontSize = 34.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp); Text("AYNI 3'Ü BİRLEŞTİR • DAHA FAZLASINI KEŞFET", color = Color.White.copy(.75f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(Modifier.height(12.dp)); Button(onClick = onPlay, Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(18.dp), colors = ButtonDefaults.buttonColors(containerColor = Accent)) { Text("🌎 DÜNYANI SEÇ VE OYNA", fontWeight = FontWeight.Black, fontSize = 16.sp) }; Spacer(Modifier.height(12.dp))
-        }
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) { StatCard("🔥", "$streak", "Gün serisi", Modifier.weight(1f)); StatCard("⭐", "$games", "Oyun", Modifier.weight(1f)); StatCard("🏆", "9", "Dünya", Modifier.weight(1f)) }; Spacer(Modifier.height(12.dp))
-        }
-        item {
-            Surface(color = Panel, shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column { Text("🎁 GÜNLÜK ÖDÜL", color = TextMain, fontWeight = FontWeight.Black); Text("Serini koru, ödülü kap!", color = TextMuted, fontSize = 11.sp) }; Button(onClick = onDaily, enabled = !dailyClaimed, shape = RoundedCornerShape(13.dp), contentPadding = PaddingValues(horizontal = 13.dp, vertical = 8.dp)) { Text(if (dailyClaimed) "ALINDI ✓" else "+ ÖDÜL", fontSize = 11.sp, fontWeight = FontWeight.Black) } }
-                Spacer(Modifier.height(12.dp)); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { (1..7).forEach { RewardDot(it, streak, dailyClaimed) } }
-            } }; Spacer(Modifier.height(12.dp))
-        }
-        item {
-            Surface(color = Panel, shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("🎯 GÜNLÜK GÖREV", color = TextMain, fontWeight = FontWeight.Black); Text("$mission/5", color = Gold, fontWeight = FontWeight.Black) }; Spacer(Modifier.height(8.dp)); Text("5 bölüm tamamla ve 100 🪙 kazan", color = TextMuted, fontSize = 11.sp); Spacer(Modifier.height(9.dp)); LinearProgressIndicator(progress = { mission / 5f }, modifier = Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(8.dp))); Spacer(Modifier.height(10.dp)); Button(onClick = onMission, enabled = mission >= 5, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(13.dp)) { Text(if (mission >= 5) "🎁 ÖDÜLÜ AL" else "GÖREVİ TAMAMLA", fontWeight = FontWeight.Black) }
-            } }
-        }
-    }
-}
-
-@Composable private fun StatCard(icon: String, value: String, label: String, modifier: Modifier) { Surface(color = Panel, shape = RoundedCornerShape(17.dp), modifier = modifier.height(75.dp)) { Column(Modifier.padding(9.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { Text(icon, fontSize = 17.sp); Text(value, color = TextMain, fontWeight = FontWeight.Black); Text(label, color = TextMuted, fontSize = 9.sp) } } }
-
-@Composable private fun RewardDot(day: Int, streak: Int, claimed: Boolean) { val active = day <= streak; Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(if (active) Accent.copy(.25f) else Color.White.copy(.04f)).border(1.dp, if (active) Accent else Color.White.copy(.06f), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) { Text(if (day == 7) "🎁" else if (claimed && day == streak) "✓" else "$day", color = if (active) Gold else TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Black) } }
-
-@Composable private fun WorldScreen(worlds: List<World>, selected: Int, onBack: () -> Unit, onWorld: (Int) -> Unit) { Column(Modifier.fillMaxSize().padding(16.dp)) { TopBar("DÜNYALAR", "İstediğini seç, istediğini oyna", onBack); Spacer(Modifier.height(12.dp)); LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) { items(worlds) { world -> WorldCard(world, selected == world.id) { onWorld(world.id) } } } } }
-
-@Composable private fun WorldCard(world: World, selected: Boolean, onClick: () -> Unit) { val infinite = rememberInfiniteTransition(label = "world${world.id}"); val glow by infinite.animateFloat(.35f, .85f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label = "glow"); Surface(onClick = onClick, color = Panel, shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth().height(156.dp).border(1.dp, if (selected) Accent.copy(glow) else Color.White.copy(.07f), RoundedCornerShape(22.dp))) { Column(Modifier.padding(13.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { Box(Modifier.size(58.dp).clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(world.colors.take(3))), contentAlignment = Alignment.Center) { Text(world.icon, fontSize = 32.sp) }; Spacer(Modifier.height(7.dp)); Text(world.name, color = TextMain, fontSize = 13.sp, fontWeight = FontWeight.Black); Text(world.subtitle, color = TextMuted, fontSize = 9.sp); Spacer(Modifier.height(4.dp)); Text("50 BÖLÜM ›", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Black) } } }
-
-@Composable private fun LevelScreen(world: World, onBack: () -> Unit, onLevel: (Int) -> Unit) { Column(Modifier.fillMaxSize().padding(16.dp)) { TopBar(world.name.uppercase(), "Bölümünü seç", onBack, world.icon); Spacer(Modifier.height(10.dp)); Surface(color = Panel, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) { Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) { Text(world.tiles.take(3).joinToString(" "), fontSize = 25.sp); Spacer(Modifier.width(12.dp)); Column(Modifier.weight(1f)) { Text("MACERA", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold); Text("50 bölüm seni bekliyor", color = TextMain, fontSize = 14.sp, fontWeight = FontWeight.Black) }; Text("⭐ 200", color = Gold, fontWeight = FontWeight.Black) } }; Spacer(Modifier.height(14.dp)); LazyVerticalGrid(columns = GridCells.Fixed(4), modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) { items((1..24).toList()) { n -> LevelButton(n, n <= 5, onLevel) } } } }
-
-@Composable private fun LevelButton(number: Int, unlocked: Boolean, onLevel: (Int) -> Unit) { Surface(onClick = { if (unlocked) onLevel(number) }, enabled = unlocked, color = if (unlocked) Panel2 else Color(0xFF0D1020), shape = RoundedCornerShape(18.dp), modifier = Modifier.height(82.dp).border(1.dp, if (unlocked) Color.White.copy(.08f) else Color.White.copy(.035f), RoundedCornerShape(18.dp))) { Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { Text(if (unlocked) if (number == 1) "▶" else "⭐" else "🔒", color = if (unlocked) Gold else TextMuted, fontSize = 18.sp); Text("$number", color = if (unlocked) TextMain else TextMuted, fontWeight = FontWeight.Black) } } }
-
-@Composable private fun GameScreen(world: World, level: Int, coins: Int, onBack: () -> Unit, onWin: (Int) -> Unit, onNext: () -> Unit) {
-    val view = LocalView.current
-    var localCoins by rememberSaveable(world.id, level) { mutableIntStateOf(coins) }
-    var score by rememberSaveable(world.id, level) { mutableIntStateOf(200 + level * 5) }
-    var lives by rememberSaveable(world.id, level) { mutableIntStateOf(3) }
-    var combo by rememberSaveable(world.id, level) { mutableIntStateOf(0) }
-    var round by rememberSaveable(world.id, level) { mutableIntStateOf(0) }
-    var removed by remember { mutableStateOf(setOf<Int>()) }
-    var tray by remember { mutableStateOf(listOf<Int>()) }
-    var banner by remember { mutableStateOf<String?>(null) }
-    var won by remember { mutableStateOf(false) }
-    var gameOver by remember { mutableStateOf(false) }
-    val tiles = remember(world.id, level, round) { (0 until 36).map { Tile(it, (it / 2) % world.tiles.size) }.shuffled(Random(level * 97 + world.id * 31 + round)) }
-
-    Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 7.dp)) {
-            TopBar("SEVİYE $level", world.name, onBack, world.icon, "🪙 $localCoins")
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("⭐ $score", color = TextMain, fontWeight = FontWeight.Black); Text("🔥 x$combo", color = Color(0xFFFFB55B), fontWeight = FontWeight.Black); Text("❤️ $lives", color = TextMain, fontWeight = FontWeight.Bold) }
-            Spacer(Modifier.height(8.dp))
-            Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(28.dp)).background(Brush.verticalGradient(listOf(Color(0xFF151B30), Color(0xFF0B0F1D)))).border(1.dp, Color.White.copy(.08f), RoundedCornerShape(28.dp)).padding(9.dp)) {
-                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Text("${world.icon}  ${world.name}", color = TextMain, fontSize = 12.sp, fontWeight = FontWeight.Black); Text("AYNI 3'Ü BİRLEŞTİR", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(9.dp))
-                    tiles.chunked(6).forEachIndexed { rowIndex, row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.padding(vertical = 2.dp).offset(x = if (rowIndex % 2 == 0) 0.dp else 5.dp)) {
-                            row.forEach { tile -> AnimatedVisibility(!removed.contains(tile.id), enter = scaleIn(spring(dampingRatio = .55f)) + fadeIn(), exit = scaleOut(tween(180)) + fadeOut(tween(130))) { GameTile(tile, world) { if (!removed.contains(tile.id) && tray.size < 7 && !won) { view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY); removed = removed + tile.id; val nextTray = tray + tile.type; if (nextTray.count { it == tile.type } >= 3) { combo += 1; val add = 35 + combo * 15 + level * 2; score += add; localCoins += 8 + combo; banner = if (combo >= 3) "🔥 COMBO x$combo  +$add" else "PERFECT!  +$add"; var count = 0; tray = nextTray.filter { if (it == tile.type && count < 3) { count++; false } else true }; view.postDelayed({ banner = null }, 700) } else { tray = nextTray; combo = 0 }; if (removed.size + 1 >= tiles.size) { won = true; onWin(75 + level * 5) }; if (tray.size >= 7 && !won) { lives--; combo = 0; tray = emptyList(); banner = "TEPSİ DOLDU!"; view.postDelayed({ banner = null }, 700); if (lives <= 0) gameOver = true } } } } }
-                        }
-                    }
-                }
-                banner?.let { msg -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Surface(color = Color.Black.copy(.8f), shape = RoundedCornerShape(22.dp), modifier = Modifier.border(1.dp, Accent.copy(.55f), RoundedCornerShape(22.dp))) { Text(msg, Modifier.padding(horizontal = 22.dp, vertical = 14.dp), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black) } } }
-            }
-            Spacer(Modifier.height(7.dp)); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("TEPSİ ${tray.size}/7", color = TextMuted, fontWeight = FontWeight.Black); Text("3 aynı = PATLAR ✨", color = TextMuted, fontSize = 9.sp) }
-            Spacer(Modifier.height(5.dp)); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { repeat(7) { TraySlot(tray.getOrNull(it), world) } }
-            Spacer(Modifier.height(7.dp)); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) { Action("🔀", "Karıştır") { if (localCoins >= 15) { localCoins -= 15; round++ } }; Action("💡", "İpucu") { if (localCoins >= 5) { localCoins -= 5; banner = "Aynı sembolden 2 tane daha ara!"; view.postDelayed({ banner = null }, 900) } }; Action("↩", "Geri Al") { if (tray.isNotEmpty()) tray = tray.dropLast(1) } }
-        }
-        if (won) WinOverlay(score, { won = false; round++; onNext() }, onBack)
-        if (gameOver) GameOver(score, { score = 200 + level * 5; lives = 3; combo = 0; removed = emptySet(); tray = emptyList(); round++; gameOver = false }, onBack)
-    }
-}
-
-@Composable private fun GameTile(tile: Tile, world: World, onClick: () -> Unit) { var selected by remember { mutableStateOf(false) }; val scale by animateFloatAsState(if (selected) 1.12f else 1f, spring(dampingRatio = .5f), label = "scale"); val rot by animateFloatAsState(if (selected) 6f else 0f, spring(dampingRatio = .5f), label = "rot"); Box(Modifier.size(48.dp).scale(scale).rotate(rot).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(world.colors[tile.type], world.colors[tile.type].copy(.5f)))).border(1.5.dp, Color.White.copy(.18f), RoundedCornerShape(14.dp)).clickable { selected = true; onClick() }, contentAlignment = Alignment.Center) { Text(world.tiles[tile.type], fontSize = 24.sp) } }
-
-@Composable private fun RowScope.TraySlot(value: Int?, world: World) { Box(Modifier.weight(1f).height(51.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(.045f)).border(1.dp, Color.White.copy(.08f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { if (value != null) Box(Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(world.colors[value]), contentAlignment = Alignment.Center) { Text(world.tiles[value], fontSize = 17.sp) } } }
-
-@Composable private fun RowScope.Action(icon: String, label: String, onClick: () -> Unit) { Surface(onClick = onClick, color = Panel, shape = RoundedCornerShape(15.dp), modifier = Modifier.weight(1f)) { Column(Modifier.padding(vertical = 7.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text(icon, fontSize = 18.sp); Text(label, color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold) } } }
-
-@Composable private fun TopBar(title: String, subtitle: String, onBack: () -> Unit, icon: String? = null, trailing: String? = null) { Row(Modifier.fillMaxWidth().height(58.dp), verticalAlignment = Alignment.CenterVertically) { TextButton(onClick = onBack) { Text("‹", color = TextMain, fontSize = 32.sp) }; if (icon != null) Text(icon, fontSize = 21.sp); Spacer(Modifier.width(6.dp)); Column(Modifier.weight(1f)) { Text(title, color = TextMain, fontSize = 16.sp, fontWeight = FontWeight.Black); Text(subtitle, color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold) }; if (trailing != null) Surface(color = Color.White.copy(.06f), shape = RoundedCornerShape(14.dp)) { Text(trailing, Modifier.padding(horizontal = 9.dp, vertical = 7.dp), color = TextMain, fontSize = 10.sp, fontWeight = FontWeight.Bold) } } }
-
-@Composable private fun WinOverlay(score: Int, onNext: () -> Unit, onLevels: () -> Unit) { Box(Modifier.fillMaxSize().background(Color.Black.copy(.83f)), contentAlignment = Alignment.Center) { Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF151B2D)), shape = RoundedCornerShape(30.dp), modifier = Modifier.fillMaxWidth(.88f)) { Column(Modifier.padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text("✨🏆✨", fontSize = 38.sp); Text("SEVİYE TAMAMLANDI!", color = TextMain, fontSize = 22.sp, fontWeight = FontWeight.Black); Spacer(Modifier.height(8.dp)); Text("⭐ $score", color = Gold, fontWeight = FontWeight.Black); Spacer(Modifier.height(18.dp)); Button(onClick = onNext, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Accent)) { Text("SONRAKİ SEVİYE  ›", fontWeight = FontWeight.Black) }; TextButton(onClick = onLevels) { Text("Bölümlere Dön") } } } } }
-
-@Composable private fun GameOver(score: Int, onRestart: () -> Unit, onBack: () -> Unit) { Box(Modifier.fillMaxSize().background(Color.Black.copy(.83f)), contentAlignment = Alignment.Center) { Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF151B2D)), shape = RoundedCornerShape(30.dp), modifier = Modifier.fillMaxWidth(.88f)) { Column(Modifier.padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text("💥", fontSize = 50.sp); Text("OYUN BİTTİ", color = TextMain, fontSize = 27.sp, fontWeight = FontWeight.Black); Text("Skor: $score", color = TextMuted); Spacer(Modifier.height(18.dp)); Button(onClick = onRestart, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) { Text("🔄 TEKRAR OYNA", fontWeight = FontWeight.Black) }; TextButton(onClick = onBack) { Text("Bölümlere Dön") } } } } }
+@Composable private fun Stone(t:Tile,w:World,ok:Boolean,sz:androidx.compose.ui.unit.Dp,click:()->Unit){val inf=rememberInfiniteTransition(label="g${t.id}");val glow by inf.animateFloat(.2f,.7f,infiniteRepeatable(tween(1100),RepeatMode.Reverse),label="glow");val c=w.colors[t.type%w.colors.size];Box(Modifier.fillMaxSize().graphicsLayer{shadowElevation=if(ok)16f else 6f;alpha=if(ok)1f else .72f;rotationZ=if(t.layer==2)-1.4f else if(t.layer==1)1f else 0f}.clip(RoundedCornerShape(17.dp)).background(Brush.linearGradient(listOf(Color.White.copy(.55f),c,c.copy(.72f),Color.Black.copy(.48f)))).border(2.dp,if(ok)Color.White.copy(.68f)else Color.White.copy(.13f),RoundedCornerShape(17.dp)).clickable(enabled=ok,onClick=click)){Box(Modifier.fillMaxSize().padding(4.dp).clip(RoundedCornerShape(13.dp)).background(Brush.linearGradient(listOf(Color.White.copy(.2f),Color.Transparent,Color.Black.copy(.18f)))),Alignment.Center){Text(w.tiles[t.type%w.tiles.size],fontSize=(sz.value*.42f).sp)};Box(Modifier.fillMaxWidth(.65f).height(5.dp).align(Alignment.TopCenter).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(if(ok).38f else .1f)));if(ok)Box(Modifier.fillMaxSize().border(2.dp,Color.White.copy(glow*.35f),RoundedCornerShape(17.dp)));Text("${t.layer+1}",Modifier.align(Alignment.BottomEnd).padding(4.dp),color=Color.White.copy(.3f),fontSize=7.sp,fontWeight=FontWeight.Black)}}
+@Composable private fun Tray(a:List<Int>,w:World){Surface(color=Color(0xFF0B0E1A),shape=RoundedCornerShape(18.dp),modifier=Modifier.fillMaxWidth().height(60.dp)){Row(Modifier.fillMaxSize().padding(6.dp),Arrangement.spacedBy(5.dp),Alignment.CenterVertically){(0 until 7).forEach{i->Box(Modifier.weight(1f).height(46.dp).clip(RoundedCornerShape(12.dp)).background(if(i<a.size)Brush.linearGradient(listOf(Color.White.copy(.25f),w.colors[a[i]%6],Color.Black.copy(.25f)))else Brush.linearGradient(listOf(Color.White.copy(.035f),Color.White.copy(.01f)))).border(1.dp,Color.White.copy(if(i<a.size).22f else .04f),RoundedCornerShape(12.dp)),Alignment.Center){if(i<a.size)Text(w.tiles[a[i]%6],fontSize=22.sp)}}}}}
+@Composable private fun Action(icon:String,label:String,enabled:Boolean,m:Modifier,click:()->Unit){Surface(onClick=click,enabled=enabled,color=if(enabled)PANEL2 else PANEL,shape=RoundedCornerShape(16.dp),modifier=m.height(68.dp)){Column(horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center){Text(icon,fontSize=19.sp);Text(label,color=if(enabled)TXT else MUTED,fontSize=9.sp,fontWeight=FontWeight.Black)}}}
+@Composable private fun Mini(i:String,v:String,m:Modifier){Surface(color=PANEL,shape=RoundedCornerShape(12.dp),modifier=m.height(38.dp)){Row(Modifier.fillMaxSize(),Arrangement.Center,Alignment.CenterVertically){Text(i,fontSize=12.sp);Spacer(Modifier.width(3.dp));Text(v,color=TXT,fontSize=10.sp,fontWeight=FontWeight.Black)}}}

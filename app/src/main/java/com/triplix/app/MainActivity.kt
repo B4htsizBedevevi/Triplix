@@ -163,7 +163,7 @@ private fun GameScreen(onBack: () -> Unit) {
                                                 view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                                                 selected = selected + tile.id
                                                 // brief press effect
-                                                android.os.Handler(mainLooper).postDelayed({
+                                                view.postDelayed({
                                                     selected = selected - tile.id
                                                 }, 90)
                                                 removed = removed + tile.id
@@ -188,14 +188,14 @@ private fun GameScreen(onBack: () -> Unit) {
                                                         if (it == tile.type && count < 3) { count++; false } else true
                                                     }
                                                     tray = left
-                                                    android.os.Handler(mainLooper).postDelayed({ banner = null }, 600)
+                                                    view.postDelayed({ banner = null }, 600)
                                                 } else combo = 0
                                                 if (tray.size >= 7) {
                                                     lives--
                                                     combo = 0
                                                     banner = "TEPSİ DOLDU!"
                                                     tray = emptyList()
-                                                    android.os.Handler(mainLooper).postDelayed({ banner = null }, 650)
+                                                    view.postDelayed({ banner = null }, 650)
                                                     if (lives <= 0) gameOver = true
                                                 }
                                             }

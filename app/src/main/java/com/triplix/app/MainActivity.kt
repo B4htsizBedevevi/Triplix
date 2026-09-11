@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
@@ -162,7 +161,6 @@ private fun GameScreen(onBack: () -> Unit) {
                                             if (!removed.contains(tile.id) && tray.size < 7) {
                                                 view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                                                 selected = selected + tile.id
-                                                // brief press effect
                                                 view.postDelayed({
                                                     selected = selected - tile.id
                                                 }, 90)
@@ -255,7 +253,7 @@ private fun TileCard(tile: Tile, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun TraySlot(value: Int?) {
+private fun RowScope.TraySlot(value: Int?) {
     Box(
         Modifier.weight(1f).height(54.dp).clip(RoundedCornerShape(12.dp))
             .background(Color.White.copy(alpha = .045f))
@@ -281,7 +279,7 @@ private fun SmallPill(icon: String, text: String) {
 }
 
 @Composable
-private fun Action(icon: String, label: String, onClick: () -> Unit) {
+private fun RowScope.Action(icon: String, label: String, onClick: () -> Unit) {
     Surface(onClick = onClick, color = Panel, shape = RoundedCornerShape(15.dp), modifier = Modifier.weight(1f)) {
         Column(Modifier.padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(icon, fontSize = 18.sp)

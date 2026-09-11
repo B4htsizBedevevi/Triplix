@@ -50,41 +50,27 @@ jobs:
           if v6.exists():
               s = v6.read_text()
               nl = chr(10)
-              s = s.replace('import androidx.compose.animation.core.tween', 'import androidx.compose.animation.core.tween' + nl + 'import androidx.compose.ui.draw.scale')
-              s = s.replace('import androidx.compose.animation.core.Animatable' + nl + 'import androidx.compose.animation.core.tween' + nl + 'import androidx.compose.foundation.background', 'import androidx.compose.animation.core.Animatable' + nl + 'import androidx.compose.animation.core.tween' + nl + 'import androidx.compose.foundation.background')
-              s = s.replace('import androidx.compose.runtime.Composable', 'import androidx.compose.runtime.Composable' + nl + 'import androidx.compose.runtime.LaunchedEffect')
+              s = s.replace('import androidx.compose.foundation.background', 'import androidx.compose.animation.core.animateFloatAsState' + nl + 'import androidx.compose.animation.core.spring' + nl + 'import androidx.compose.foundation.background')
+              s = s.replace('import androidx.compose.runtime.Composable', 'import androidx.compose.runtime.Composable')
+              s = s.replace('import androidx.compose.ui.draw.clip', 'import androidx.compose.ui.draw.clip' + nl + 'import androidx.compose.ui.draw.scale')
               lines = s.splitlines()
               replacement = [
                   '@Composable',
                   'private fun GemV6(type: Int, selected: Boolean, modifier: Modifier, click: () -> Unit) {',
                   '    val color = GemColors[type]',
-                  '    val pop = androidx.compose.runtime.remember { Animatable(1f) }',
-                  '    val glow = androidx.compose.runtime.remember { Animatable(0f) }',
-                  '    LaunchedEffect(selected) {',
-                  '        if (selected) {',
-                  '            pop.snapTo(.78f)',
-                  '            glow.snapTo(0f)',
-                  '            pop.animateTo(1.10f, tween(150))',
-                  '            pop.animateTo(1.02f, tween(110))',
-                  '            pop.animateTo(1f, tween(90))',
-                  '            glow.animateTo(1f, tween(120))',
-                  '            glow.animateTo(0f, tween(260))',
-                  '        } else {',
-                  '            pop.animateTo(1f, tween(100))',
-                  '            glow.animateTo(0f, tween(100))',
-                  '        }',
-                  '    }',
+                  '    val pop by animateFloatAsState(if (selected) 1.09f else 1f, spring(dampingRatio = .48f, stiffness = 520f), label = "gemPop")',
+                  '    val glow by animateFloatAsState(if (selected) 1f else 0f, spring(dampingRatio = .7f, stiffness = 380f), label = "gemGlow")',
                   '    Box(',
-                  '        modifier.scale(pop.value).clip(RoundedCornerShape(13.dp))',
-                  '            .background(color.copy(if (selected) .30f else .18f))',
+                  '        modifier.scale(pop).clip(RoundedCornerShape(13.dp))',
+                  '            .background(color.copy(if (selected) .31f else .18f))',
                   '            .border(if (selected) 2.dp else 1.dp, if (selected) Color.White else color.copy(.43f), RoundedCornerShape(13.dp))',
                   '            .clickable(onClick = click),',
                   '        contentAlignment = Alignment.Center',
                   '    ) {',
-                  '        if (glow.value > 0f) {',
-                  '            Box(Modifier.matchParentSize().border(3.dp, Color.White.copy(.28f * glow.value), RoundedCornerShape(13.dp)))',
-                  '            Text("✦", color = Color.White.copy(.9f * glow.value), fontSize = 14.sp, modifier = Modifier.align(Alignment.TopEnd).padding(4.dp))',
-                  '            Text("✦", color = Color.White.copy(.65f * glow.value), fontSize = 10.sp, modifier = Modifier.align(Alignment.BottomStart).padding(4.dp))',
+                  '        if (glow > .01f) {',
+                  '            Box(Modifier.matchParentSize().border(3.dp, Color.White.copy(.26f * glow), RoundedCornerShape(13.dp)))',
+                  '            Text("✦", color = Color.White.copy(.9f * glow), fontSize = 14.sp, modifier = Modifier.align(Alignment.TopEnd).padding(4.dp))',
+                  '            Text("✦", color = Color.White.copy(.65f * glow), fontSize = 10.sp, modifier = Modifier.align(Alignment.BottomStart).padding(4.dp))',
                   '        }',
                   '        Text(Gems[type], color = Color.White, fontSize = if (selected) 26.sp else 24.sp, fontWeight = FontWeight.Black)',
                   '    }',

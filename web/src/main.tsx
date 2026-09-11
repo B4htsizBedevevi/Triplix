@@ -42,7 +42,6 @@ type World=keyof typeof worlds
 type Screen='home'|'worlds'|'levels'|'game'
 type Status='playing'|'won'|'lost'
 type Stone={id:number;kind:number}
-
 type LevelConfig={stones:number;kinds:number;moves:number}
 
 function getLevelConfig(level:number):LevelConfig{
@@ -141,4 +140,4 @@ function App(){
     {screen==='game'&&<section className="game"><div className="game-head"><button className="back" onClick={()=>nav('levels')}>‹</button><div className="level-sign"><span>{theme.title}</span><b>BÖLÜM {level} • {config.stones} TAŞ</b></div><div className="coins">◉ 400</div></div><div className="goal-strip"><div><small>HAMLE</small><b>{moves}</b></div><div><small>COMBO</small><b className="gold">x{combo}</b></div><div><small>KALAN</small><b>{board.length}/{config.stones}</b></div><div><small>SKOR</small><b>{score}</b></div></div><div className={`game-scene ${theme.bg}`}><div className="scene-lights"/><div className="game-board" style={{'--board-cols':boardCols} as React.CSSProperties}>{board.map(stone=><button disabled={status!=='playing'} key={stone.id} className={`stone ${selectedId===stone.id?'selected':''}`} style={{background:theme.colors[stone.kind]}} onClick={()=>selectStone(stone)}><GameIcon icon={theme.icons[stone.kind]}/></button>)}</div></div><div className="tray-wrap"><div className="tray-head"><b>SEÇİLEN TAŞLAR</b><span>{tray.length}/7</span></div><div className="tray">{Array.from({length:7},(_,i)=>{const s=tray[i];return s?<div className="tray-stone" key={i} style={{background:theme.colors[s.kind]}}><GameIcon icon={theme.icons[s.kind]}/></div>:<div className="tray-slot" key={i}/>} )}</div></div><div className={`message ${status}`}>{message}</div>{status!=='playing'&&<div className="result"><div className="result-burst">{status==='won'?'★':'×'}</div><b>{status==='won'?'BÖLÜM TAMAMLANDI!':'TEPSİ DOLDU!'}</b><small>{status==='won'?'Tahtadaki tüm taşları temizledin.':'Daha iyi bir sıra kurup tekrar dene.'}</small><div><button className="primary" onClick={()=>start(status==='won'?level+1:level,world)}>{status==='won'?'SONRAKİ BÖLÜM':'TEKRAR OYNA'} <b>→</b></button><button className="ghost" onClick={()=>nav('levels')}>BÖLÜMLER</button></div></div>}<div className="tools"><button disabled={status!=='playing'} onClick={shuffle}>↝<span>Karıştır</span></button><button disabled={status!=='playing'} onClick={hint}>◇<span>İpucu</span></button><button onClick={()=>start(level,world)}>↻<span>Sıfırla</span></button></div></section>}
   </main>
 }
-createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.Fragment>)
+createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>)

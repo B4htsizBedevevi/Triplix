@@ -20,6 +20,26 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.7.1'
+      - name: Normalize Compose source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/com/triplix/app/MainActivity.kt')
+          s = p.read_text()
+          s = s.replace('LinearProgressIndicator(progress={mission/5f},Modifier', 'LinearProgressIndicator(progress={mission/5f},modifier=Modifier')
+          s = s.replace('Row(Modifier.padding(14.dp),Alignment.CenterVertically)', 'Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically)')
+          s = s.replace('Row(Modifier.fillMaxWidth(),Alignment.CenterVertically)', 'Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically)')
+          s = s.replace('Button(reset,Modifier.fillMaxWidth()', 'Button(::reset,Modifier.fillMaxWidth()')
+          s = s.replace('AnimatedVisibility(burst,enter=fadeIn(tween(80))+scaleIn(tween(150)),exit=fadeOut(tween(200))+scaleOut(tween(200)),modifier=Modifier.align(Alignment.Center)){Text("💥✨",fontSize=78.sp)}', 'if(burst){Text("💥✨",Modifier.align(Alignment.Center),fontSize=78.sp)}')
+          s = s.replace('if(win||over)AnimatedVisibility(true,enter=fadeIn(tween(140)),exit=fadeOut(tween(100))){', 'if(win||over){')
+          marker = '\n\n@Composable private fun Stone'
+          if marker in s:
+              before, after = s.split(marker, 1)
+              if before.endswith('}}}}}}'):
+                  before = before[:-1]
+              s = before + marker + after
+          p.write_text(s)
+          PY
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug
       - name: Upload APK

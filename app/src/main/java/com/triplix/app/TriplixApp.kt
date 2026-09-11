@@ -1,10 +1,7 @@
 package com.triplix.app
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -222,8 +219,10 @@ private fun Home(onPlay: () -> Unit, onModes: () -> Unit, onLevels: () -> Unit, 
                     }
                 }
             }
-            AnimatedVisibility(visible = banner.isNotEmpty(), enter = fadeIn(tween(120)), exit = fadeOut(tween(220)), modifier = Modifier.align(Alignment.Center)) {
-                Surface(RoundedCornerShape(18.dp), color = Green, shadowElevation = 10.dp) { Text(banner, Modifier.padding(horizontal = 18.dp, vertical = 11.dp), color = Bg, fontSize = 16.sp, fontWeight = FontWeight.Black) }
+            if (banner.isNotEmpty()) {
+                Surface(modifier = Modifier.align(Alignment.Center), shape = RoundedCornerShape(18.dp), color = Green, shadowElevation = 10.dp) {
+                    Text(banner, Modifier.padding(horizontal = 18.dp, vertical = 11.dp), color = Bg, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                }
             }
         }
         Spacer(Modifier.height(12.dp))

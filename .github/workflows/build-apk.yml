@@ -20,41 +20,32 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.7.1'
-      - name: Normalize Compose source
+      - name: Normalize TRIPLIX source
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          files = [
-              Path('app/src/main/java/com/triplix/app/MainActivity.kt'),
-              Path('app/src/main/java/com/triplix/app/TriplixV2.kt'),
-          ]
+          # V2/V3 were prototypes and are no longer entry points. Keep the
+          # repository history, but exclude their unfinished Kotlin sources
+          # from the production build so one old screen cannot break the APK.
+          for name in ('TriplixV2.kt', 'TriplixV3.kt'):
+              p = Path('app/src/main/java/com/triplix/app') / name
+              if p.exists():
+                  p.unlink()
 
-          for p in files:
-              if not p.exists():
-                  continue
-              s = p.read_text()
+          p = Path('app/src/main/java/com/triplix/app/TriplixV4.kt')
+          s = p.read_text()
 
-              # Compose named arguments / imports used by the older screen.
-              s = s.replace('import androidx.compose.ui.graphics.Color', 'import androidx.compose.ui.graphics.Color\nimport androidx.compose.ui.graphics.graphicsLayer')
-              s = s.replace('LinearProgressIndicator(progress={mission/5f},Modifier', 'LinearProgressIndicator(progress={mission/5f},modifier=Modifier')
-              s = s.replace('LinearProgressIndicator(progress = { mission / 5f }, Modifier', 'LinearProgressIndicator(progress = { mission / 5f }, modifier = Modifier')
-              s = s.replace('Button(reward, enabled = mission >= 5, Modifier.fillMaxWidth()', 'Button(onClick = reward, enabled = mission >= 5, modifier = Modifier.fillMaxWidth()')
-              s = s.replace('Worlds { page = "home" } { worldId = it; page = "levels" }', 'Worlds(back = { page = "home" }, choose = { worldId = it; page = "levels" })')
-              s = s.replace('Levels(WORLDS[worldId], unlocked, { page = "worlds" }) { level = it; page = "game" }', 'Levels(world = WORLDS[worldId], unlocked = unlocked, back = { page = "worlds" }, choose = { level = it; page = "game" })')
-              s = s.replace('AnimatedVisibility(visible = burst, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) { Text("💥", fontSize = 58.sp) }', 'if (burst) Text("💥", Modifier.align(Alignment.Center), fontSize = 58.sp)')
-              s = s.replace('@Composable private fun Info(', '@Composable private fun RowScope.Info(')
-              s = s.replace('AnimatedVisibility(burst,enter=fadeIn(tween(80))+scaleIn(tween(150)),exit=fadeOut(tween(200))+scaleOut(tween(200)),modifier=Modifier.align(Alignment.Center)){Text("💥✨",fontSize=78.sp)}', 'if(burst){Text("💥✨",Modifier.align(Alignment.Center),fontSize=78.sp)}')
-              s = s.replace('if(win||over)AnimatedVisibility(true,enter=fadeIn(tween(140)),exit=fadeOut(tween(100))){', 'if(win||over){')
-              s = s.replace('setContent { App() }', 'setContent { TriplixV2App() }')
+          # Repair the V4 prototype's extra closing brace.
+          s = s.replace('   }\n  }\n }\n }\n}\n\n@Composable private fun Top4', '   }\n  }\n }\n}\n\n@Composable private fun Top4')
 
-              # TriplixV2 uses positional arguments in the wrong orientation/order.
-              s = s.replace('Column(Modifier.fillMaxSize(), Alignment.CenterHorizontally, Arrangement.Center)', 'Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center)')
-              s = s.replace('Column(Modifier.fillMaxSize().padding(14.dp), Alignment.CenterHorizontally, Arrangement.Center)', 'Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center)')
-              s = s.replace('Row(Modifier.padding(14.dp), Alignment.CenterVertically)', 'Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically)')
-              s = s.replace('Row(Modifier.fillMaxWidth(), Alignment.CenterVertically)', 'Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically)')
+          # Mini4 is used inside a Row and therefore needs RowScope for weight().
+          s = s.replace('@Composable private fun Mini4(', '@Composable private fun RowScope.Mini4(')
 
-              p.write_text(s)
+          # Avoid AnimatedVisibility receiver inference in the board overlay.
+          s = s.replace('AnimatedVisibility(burst){Text("💥✨",fontSize=60.sp)}', 'if(burst){Text("💥✨",Modifier.align(Alignment.Center),fontSize=60.sp)}')
+
+          p.write_text(s)
           PY
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug

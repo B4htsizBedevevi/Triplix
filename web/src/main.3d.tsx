@@ -10,19 +10,36 @@ type World=keyof typeof worlds
 type Config={stones:number;kinds:number;moves:number;layers:number}
 const pack={fruit:['strawberry','banana','grapes','lemon','watermelon','apple-core','carrot','mushroom-gills','berry-bush','flowers','sprout','pineapple','pear','peach','orange','cherry','coconut','corn'],crystal:['crystal-cluster','crystal-shine','topaz','minerals','crystal-wand','crystal-ball','diamond','emerald','ruby','sapphire','amethyst','gem','ore','gold-nuggets','gold-bar','jewel-crown','engagement-ring','treasure-map'],magic:['magic-potion','crystal-ball','crystal-wand','spell-book','wizard-staff','fairy-wand','portal','magic-swirl','rune-stone','treasure-map','enchanted-shield','potion-ball','scroll-unfurled','wizard-hat','cauldron','magic-hat','crystal-eye','glowing-hands'],space:['rocket','astronaut-helmet','moon','sun','planet-core','saturn','ufo','alien-stare','meteor','comet-spark','galaxy','space-shuttle','satellite','space-suit','asteroid','telescope','star-cycle','solar-system'],friends:['cat','dog','fox','rabbit','bear-face','owl','frog','butterfly','fish','bird','hedgehog','squirrel','mouse','panda','penguin','turtle','wolf-head','paw-heart'],ancient:['ankh','scarab-beetle','sphinx','pyramid','greek-temple','laurel-crown','amphora','hourglass','hieroglyph-y','roman-toga','stone-tablet','egyptian-walk','pharaoh','mummy-head','ancient-ruins','coliseum','gorgon','medusa-head'],nature:['sprout','flowers','tree','mountain','volcano','leaf','acorn','pine-tree','river','water-drop','fire','wind','cloud','snowflake','sun','rain','rainbow','mushroom-gills'],season:['snowflake','falling-leaf','blossom','sun','cloud','rain','rainbow','wind','icicles-aura','autumn-leaf','spring','summer','falling-star','thunderstorm','mist','temperature-hot','temperature-cold','weather-vane'],collection:['compass','crown','treasure-map','key','chest','gem','trophy','coin-purse','star-medal','dice-six-faces','target','scroll-unfurled','medal','gold-stack','lock','map-marker','crystal-trophy','laurel-trophy']} as const
 const worlds={Meyve:{title:'Meyve Bahçesi',tagline:'Tatlı eşleşmeler',icons:pack.fruit,colors:['#ef6680','#f7bb50','#63cf7d','#4faee9','#a37cf1','#ec8b59'],bg:'orchard',table:'#182419',accent:'#78d879'},Kristal:{title:'Kristal Dünyası',tagline:'Parla ve patla',icons:pack.crystal,colors:['#4baeff','#5978ff','#55d59d','#ad66ff','#ff6885','#e7be51'],bg:'crystal',table:'#101a31',accent:'#67cfff'},Sihir:{title:'Sihirli Objeler',tagline:'Büyük maceralar',icons:pack.magic,colors:['#9b70ef','#5e9dff','#ce6fe0','#78dbcf','#dd9b5d','#8784dc'],bg:'magic',table:'#1a1029',accent:'#bd78ff'},Kozmik:{title:'Kozmik Serüven',tagline:'Parlak üçlüler',icons:pack.space,colors:['#4ca8ff','#7e78ff','#6a9aff','#69d5ac','#ffc857','#ba86ff'],bg:'space',table:'#080d20',accent:'#6c9dff'},Dostlar:{title:'Sevimli Dostlar',tagline:'Tatlı karakterler',icons:pack.friends,colors:['#ef8ea5','#b7a57e','#7e99cf','#af81e2','#e97878','#75c99e'],bg:'friends',table:'#211c18',accent:'#ffad7e'},Antik:{title:'Antik Semboller',tagline:'Zamanı aşanlar',icons:pack.ancient,colors:['#d5ac58','#6c98c7','#d7b76c','#8c7454','#63a27c','#b88655'],bg:'ancient',table:'#241c14',accent:'#d5ac58'},Dogal:{title:'Doğa Elementleri',tagline:'Doğanın gücü',icons:pack.nature,colors:['#63d17c','#4caee4','#ed6d5e','#7e9ef0','#9d8465','#e18bb1'],bg:'nature',table:'#142218',accent:'#67d47d'},Mevsim:{title:'Mevsimler',tagline:'Her mevsim farklı',icons:pack.season,colors:['#71aef0','#ee9ab9','#ffc85a','#e18a67','#c87957','#83a8d9'],bg:'season',table:'#18202a',accent:'#9ac8ff'},Koleksiyon:{title:'Özel Koleksiyon',tagline:'TRIPLIX özel',icons:pack.collection,colors:['#e0b74f','#e66f85','#57a9ed','#62ca90','#f4ba4f','#9b7be9'],bg:'collection',table:'#211b12',accent:'#f0c85b'}} as const
-function config(level:number):Config{const safe=Math.max(1,Math.min(60,level)),stones=27+Math.floor((safe-1)/5)*3,kinds=Math.min(18,Math.ceil(stones/3)),layers=safe<11?1:safe<26?2:safe<46?3:4;return{stones,kinds,moves:stones+5,layers}}
+function config(level:number):Config{
+ const safe=Math.max(1,Math.min(60,level))
+ const stones=Math.min(66,27+Math.floor((safe-1)/4)*3)
+ const kinds=Math.min(18,Math.max(3,Math.ceil(stones/3)))
+ const layers=safe<6?2:safe<18?3:safe<34?4:safe<49?5:6
+ return{stones,kinds,moves:stones+5,layers}
+}
+function layoutFor(level:number){
+ const shapes=[
+  [[0,0],[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]],
+  [[0,0],[1,0],[-1,0],[0,1],[0,-1],[2,0],[-2,0],[0,2],[0,-2],[1,1],[-1,1],[1,-1],[-1,-1]],
+  [[0,0],[1,0],[-1,0],[0,1],[0,-1],[2,0],[-2,0],[0,2],[0,-2],[1,1],[-1,1],[1,-1],[-1,-1],[2,1],[-2,-1],[1,2],[-1,-2]]
+ ] as const
+ return shapes[Math.min(shapes.length-1,Math.floor((level-1)/10))]
+}
 function makeBoard(seed:number,level:number):ThreeStone[]{
- const c=config(level),cols=7,cluster=Array.from({length:35},(_,i)=>({x:i%cols,y:Math.floor(i/cols)})),out:ThreeStone[]=[]
- const perLayer=Math.ceil(c.stones/c.layers)
- const order=(layer:number)=>cluster.map((_,i)=>cluster[(i*5+layer*7+seed*3)%cluster.length])
+ const c=config(level),shape=layoutFor(level),out:ThreeStone[]=[]
+ const layerWeights=Array.from({length:c.layers},(_,i)=>Math.max(1,c.layers-i))
+ const totalWeight=layerWeights.reduce((a,b)=>a+b,0)
+ let remaining=c.stones
  for(let layer=0;layer<c.layers;layer++){
-  const count=Math.min(perLayer,c.stones-out.length),pool=order(layer).slice(0,Math.min(cluster.length,count+Math.max(4,Math.floor(count*.35))))
+  const count=layer===c.layers-1?remaining:Math.max(3,Math.round(c.stones*layerWeights[layer]/totalWeight))
+  remaining-=count
+  const scale=Math.max(.52,1-layer*.11)
+  const pool=shape.map(([x,y])=>({x:Math.round(x*scale),y:Math.round(y*scale)})).filter((p,i,a)=>i===a.findIndex(q=>q.x===p.x&&q.y===p.y))
   for(let i=0;i<count;i++){
-   const p=pool[i],g=out.length
-   out.push({id:seed*1000+g,kind:Math.floor(g/3)%c.kinds,x:p.x,y:p.y,layer})
+   const p=pool[(i*3+seed+layer*5)%pool.length],g=out.length
+   out.push({id:seed*10000+g,kind:Math.floor(g/3)%c.kinds,x:p.x+3,y:p.y+3,layer})
   }
  }
- for(let i=out.length-1;i>0;i--){const j=Math.floor((((Math.sin(seed*997+i*41+level*19)*10000)%1)+1)%1*(i+1));[out[i],out[j]]=[out[j],out[i]]}
  return out
 }
 const icon=(name:string)=>`game-icons:${name}`

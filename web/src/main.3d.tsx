@@ -1,0 +1,58 @@
+import React,{useEffect,useMemo,useState} from 'react'
+import {createRoot} from 'react-dom/client'
+import {Icon} from '@iconify/react'
+import ThreeBoard,{ThreeStone} from './ThreeBoard'
+import './main3d.css'
+
+type Screen='home'|'worlds'|'levels'|'game'
+type Status='playing'|'won'|'lost'
+type World=keyof typeof worlds
+
+type Config={stones:number;kinds:number;moves:number;layers:number}
+const pack={
+ fruit:['strawberry','banana','grapes','lemon','watermelon','apple-core','carrot','mushroom-gills','berry-bush','flowers','sprout','pineapple','pear','peach','orange','cherry','coconut','corn'],
+ crystal:['crystal-cluster','crystal-shine','topaz','minerals','crystal-wand','crystal-ball','diamond','emerald','ruby','sapphire','amethyst','gem','ore','gold-nuggets','gold-bar','jewel-crown','engagement-ring','treasure-map'],
+ magic:['magic-potion','crystal-ball','crystal-wand','spell-book','wizard-staff','fairy-wand','portal','magic-swirl','rune-stone','treasure-map','enchanted-shield','potion-ball','scroll-unfurled','wizard-hat','cauldron','magic-hat','crystal-eye','glowing-hands'],
+ space:['rocket','astronaut-helmet','moon','sun','planet-core','saturn','ufo','alien-stare','meteor','comet-spark','galaxy','space-shuttle','satellite','space-suit','asteroid','telescope','star-cycle','solar-system'],
+ friends:['cat','dog','fox','rabbit','bear-face','owl','frog','butterfly','fish','bird','hedgehog','squirrel','mouse','panda','penguin','turtle','wolf-head','paw-heart'],
+ ancient:['ankh','scarab-beetle','sphinx','pyramid','greek-temple','laurel-crown','amphora','hourglass','hieroglyph-y','roman-toga','stone-tablet','egyptian-walk','pharaoh','mummy-head','ancient-ruins','coliseum','gorgon','medusa-head'],
+ nature:['sprout','flowers','tree','mountain','volcano','leaf','acorn','pine-tree','river','water-drop','fire','wind','cloud','snowflake','sun','rain','rainbow','mushroom-gills'],
+ season:['snowflake','falling-leaf','blossom','sun','cloud','rain','rainbow','wind','icicles-aura','autumn-leaf','spring','summer','falling-star','thunderstorm','mist','temperature-hot','temperature-cold','weather-vane'],
+ collection:['compass','crown','treasure-map','key','chest','gem','trophy','coin-purse','star-medal','dice-six-faces','target','scroll-unfurled','medal','gold-stack','lock','map-marker','crystal-trophy','laurel-trophy']
+} as const
+const worlds={
+ Meyve:{title:'Meyve Bahçesi',tagline:'Tatlı eşleşmeler',icons:pack.fruit,colors:['#ef6680','#f7bb50','#63cf7d','#4faee9','#a37cf1','#ec8b59'],bg:'orchard',table:'#182419',accent:'#78d879'},
+ Kristal:{title:'Kristal Dünyası',tagline:'Parla ve patla',icons:pack.crystal,colors:['#4baeff','#5978ff','#55d59d','#ad66ff','#ff6885','#e7be51'],bg:'crystal',table:'#101a31',accent:'#67cfff'},
+ Sihir:{title:'Sihirli Objeler',tagline:'Büyük maceralar',icons:pack.magic,colors:['#9b70ef','#5e9dff','#ce6fe0','#78dbcf','#dd9b5d','#8784dc'],bg:'magic',table:'#1a1029',accent:'#bd78ff'},
+ Kozmik:{title:'Kozmik Serüven',tagline:'Parlak üçlüler',icons:pack.space,colors:['#4ca8ff','#7e78ff','#6a9aff','#69d5ac','#ffc857','#ba86ff'],bg:'space',table:'#080d20',accent:'#6c9dff'},
+ Dostlar:{title:'Sevimli Dostlar',tagline:'Tatlı karakterler',icons:pack.friends,colors:['#ef8ea5','#b7a57e','#7e99cf','#af81e2','#e97878','#75c99e'],bg:'friends',table:'#211c18',accent:'#ffad7e'},
+ Antik:{title:'Antik Semboller',tagline:'Zamanı aşanlar',icons:pack.ancient,colors:['#d5ac58','#6c98c7','#d7b76c','#8c7454','#63a27c','#b88655'],bg:'ancient',table:'#241c14',accent:'#d5ac58'},
+ Dogal:{title:'Doğa Elementleri',tagline:'Doğanın gücü',icons:pack.nature,colors:['#63d17c','#4caee4','#ed6d5e','#7e9ef0','#9d8465','#e18bb1'],bg:'nature',table:'#142218',accent:'#67d47d'},
+ Mevsim:{title:'Mevsimler',tagline:'Her mevsim farklı',icons:pack.season,colors:['#71aef0','#ee9ab9','#ffc85a','#e18a67','#c87957','#83a8d9'],bg:'season',table:'#18202a',accent:'#9ac8ff'},
+ Koleksiyon:{title:'Özel Koleksiyon',tagline:'TRIPLIX özel',icons:pack.collection,colors:['#e0b74f','#e66f85','#57a9ed','#62ca90','#f4ba4f','#9b7be9'],bg:'collection',table:'#211b12',accent:'#f0c85b'}
+} as const
+
+function config(level:number):Config{const safe=Math.max(1,Math.min(60,level));const stones=27+Math.floor((safe-1)/5)*3;const kinds=Math.min(18,Math.ceil(stones/3));const layers=safe<11?1:safe<26?2:safe<46?3:4;return{stones,kinds,moves:stones+5,layers}}
+function makeBoard(seed:number,level:number):ThreeStone[]{const c=config(level),cols=7,perLayer=Math.ceil(c.stones/c.layers),positions=Array.from({length:48},(_,i)=>({x:i%cols,y:Math.floor(i/cols)})),out:ThreeStone[]=[];for(let layer=0;layer<c.layers;layer++){const count=Math.min(perLayer,c.stones-out.length);for(let i=0;i<count;i++){const p=positions[(i*2+layer*5+seed*3)%positions.length],g=out.length;out.push({id:seed*1000+g,kind:Math.floor(g/3)%c.kinds,x:p.x,y:p.y,layer})}}for(let i=out.length-1;i>0;i--){const j=Math.floor((((Math.sin(seed*997+i*41+level*19)*10000)%1)+1)%1*(i+1));[out[i],out[j]]=[out[j],out[i]]}return out}
+const icon=(name:string)=>`game-icons:${name}`
+function App(){
+ const[screen,setScreen]=useState<Screen>('home'),[world,setWorld]=useState<World>('Meyve'),[level,setLevel]=useState(1),[board,setBoard]=useState<ThreeStone[]>(makeBoard(1,1)),[tray,setTray]=useState<ThreeStone[]>([]),[moves,setMoves]=useState(config(1).moves),[score,setScore]=useState(0),[combo,setCombo]=useState(0),[status,setStatus]=useState<Status>('playing'),[selectedId,setSelectedId]=useState<number|null>(null),[fx,setFx]=useState(0)
+ const theme=worlds[world],c=config(level)
+ const counts=useMemo(()=>tray.reduce<Record<number,number>>((a,s)=>(a[s.kind]=(a[s.kind]??0)+1,a),{}),[tray])
+ const nav=(next:Screen)=>{window.history.pushState({triplixScreen:next},'',window.location.href);setScreen(next)}
+ useEffect(()=>{const pop=()=>setScreen(window.history.state?.triplixScreen as Screen??'home');if(!window.history.state?.triplixScreen)window.history.replaceState({triplixScreen:'home'},'',window.location.href);addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop)},[])
+ useEffect(()=>{if(status!=='playing')return;const entry=Object.entries(counts).find(([,n])=>n>=3);if(entry){const kind=Number(entry[0]);const timer=window.setTimeout(()=>{setTray(t=>{let removed=0;return t.filter(s=>s.kind!==kind||removed++>=3)});setCombo(v=>v+1);setScore(v=>v+125+combo*25);setFx(v=>v+1)},260);return()=>clearTimeout(timer)}if(board.length===0){setStatus('won')}else if(tray.length>=7||moves<=0){setStatus('lost')}},[counts,board.length,tray.length,moves,status,combo])
+ useEffect(()=>{if(!fx)return;const t=window.setTimeout(()=>setFx(0),720);return()=>clearTimeout(t)},[fx])
+ function start(n:number,w:World=world){const safe=Math.max(1,Math.min(60,n)),cc=config(safe);setLevel(safe);setWorld(w);setBoard(makeBoard(safe,safe));setTray([]);setMoves(cc.moves);setScore(0);setCombo(0);setStatus('playing');setSelectedId(null);nav('game')}
+ function pick(s:ThreeStone){if(status!=='playing'||selectedId!==null||moves<=0||tray.length>=7)return;setSelectedId(s.id);window.setTimeout(()=>{setBoard(v=>v.filter(x=>x.id!==s.id));setTray(v=>[...v,s]);setMoves(v=>v-1);setSelectedId(null)},440)}
+ function reset(){start(level)}
+ return <main className={`triplix3d world-${theme.bg}`}>
+  <header className="t3d-top"><button className="t3d-brand" onClick={()=>nav('home')}><span>✦</span><b>TRIPLIX</b></button><div className="t3d-wallet">◉ 400</div></header>
+  {screen==='home'&&<section className="t3d-home"><div className="t3d-hero"><div className="hero-orb"/><div className="hero-copy"><span className="eyebrow">A NEW DIMENSION OF MATCHING</span><h1>Taşları eşleştir.<br/><em>Dünyaları keşfet.</em></h1><p>Gerçek 3D oyun alanı, anlamlı ikon setleri ve zincirleme üçlü patlamalarıyla TRIPLIX.</p><div className="hero-actions"><button className="t3d-primary" onClick={()=>nav('worlds')}>DÜNYAYI KEŞFET <span>→</span></button><button className="t3d-secondary" onClick={()=>start(1)}>HEMEN OYNA</button></div></div><div className="hero-icons">{theme.icons.slice(0,5).map((x,i)=><div key={x} className={`hero-tile ht${i+1}`}><Icon icon={icon(x)}/></div>)}</div></div><div className="stats"><div><b>9</b><span>DÜNYA</span></div><div><b>60</b><span>BÖLÜM</span></div><div><b>18</b><span>İKON / SET</span></div><div><b>3D</b><span>GERÇEK TAŞLAR</span></div></div></section>}
+  {screen==='worlds'&&<section className="t3d-page"><div className="t3d-page-head"><button onClick={()=>nav('home')}>‹</button><div><span>DÜNYA SEÇİMİ</span><h2>Macera Haritası</h2></div></div><p>Her dünya kendi temasına göre hazırlanmış 18 farklı simgeyle gelir.</p><div className="t3d-world-grid">{(Object.keys(worlds) as World[]).map(w=><button key={w} className={`t3d-world-card ${w===world?'active':''}`} onClick={()=>{setWorld(w);nav('levels')}}><div className={`world-art ${worlds[w].bg}`}><Icon icon={icon(worlds[w].icons[0])}/><div>{worlds[w].icons.slice(1,5).map(x=><Icon key={x} icon={icon(x)}/>)}</div></div><b>{worlds[w].title}</b><small>{worlds[w].tagline}</small></button>)}</div></section>}
+  {screen==='levels'&&<section className="t3d-page"><div className="t3d-page-head"><button onClick={()=>nav('worlds')}>‹</button><div><span>{theme.title.toUpperCase()}</span><h2>Bölüm Haritası</h2></div></div><div className="level-banner"><div className="level-emblem"><Icon icon={icon(theme.icons[0])}/></div><div><b>{theme.title}</b><small>Seviye {level} / 60 • {c.stones} taş • {c.layers} katman • {c.kinds} simge</small><div className="progress"><i style={{width:`${level/60*100}%`}}/></div></div></div><div className="level-grid">{Array.from({length:60},(_,i)=>i+1).map(n=>{const locked=n>level+1;return <button key={n} disabled={locked} className={`level ${n===level?'current':''} ${locked?'locked':''}`} onClick={()=>start(n)}><b>{locked?'·':n}</b><span>{n<level?'★★★':'★'}</span></button>})}</div></section>}
+  {screen==='game'&&<section className="t3d-game"><div className="game-titlebar"><button onClick={()=>nav('levels')}>‹</button><div><span>{theme.title}</span><b>BÖLÜM {level}</b></div><div className="game-coins">◉ 400</div></div><div className="hud"><div><small>HAMLE</small><b>{moves}</b></div><div><small>COMBO</small><b>x{combo}</b></div><div><small>KALAN</small><b>{board.length}/{c.stones}</b></div><div><small>SKOR</small><b>{score}</b></div></div><div className="scene-wrap"><ThreeBoard stones={board} tray={tray} theme={theme} selectedId={selectedId} onPick={pick}/>{fx>0&&<div className={`triple-burst combo-${Math.min(combo,5)}`}><i/><i/><i/><i/><strong>TRIPLE!</strong><span>+{125+(combo-1)*25}</span></div>}{status!=='playing'&&<div className="result-card"><span>{status==='won'?'BÖLÜM TAMAMLANDI':'TEPSİ DOLDU'}</span><h2>{status==='won'?'Mükemmel!':'Bir kez daha!'}</h2><p>{status==='won'?'Bütün taşları temizledin.':'Aynı simgeleri üçlüye çevirip alanı aç.'}</p><div><button className="t3d-primary" onClick={reset}>{status==='won'?'TEKRAR OYNA':'YENİDEN DENE'}</button><button className="t3d-secondary" onClick={()=>nav('levels')}>BÖLÜMLER</button></div></div>}</div><div className="game-tip">3 aynı taşı sırayla tepsiye indir • üstteki taşları önce aç • tüm alanı temizle</div></section>}
+ </main>
+}
+
+createRoot(document.getElementById('root')!).render(<App/>)

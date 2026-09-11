@@ -50,7 +50,8 @@ jobs:
           if v6.exists():
               s = v6.read_text()
               nl = chr(10)
-              s = s.replace('import androidx.compose.foundation.background', 'import androidx.compose.animation.core.Animatable' + nl + 'import androidx.compose.animation.core.tween' + nl + 'import androidx.compose.foundation.background')
+              s = s.replace('import androidx.compose.animation.core.tween', 'import androidx.compose.animation.core.tween' + nl + 'import androidx.compose.ui.draw.scale')
+              s = s.replace('import androidx.compose.animation.core.Animatable' + nl + 'import androidx.compose.animation.core.tween' + nl + 'import androidx.compose.foundation.background', 'import androidx.compose.animation.core.Animatable' + nl + 'import androidx.compose.animation.core.tween' + nl + 'import androidx.compose.foundation.background')
               s = s.replace('import androidx.compose.runtime.Composable', 'import androidx.compose.runtime.Composable' + nl + 'import androidx.compose.runtime.LaunchedEffect')
               lines = s.splitlines()
               replacement = [

@@ -16,6 +16,6 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src/main.clean.tsx", "src/vite-env.d.ts"],
+  "include": ["src/main.3d.tsx", "src/ThreeBoard.tsx", "src/vite-env.d.ts"],
   "references": []
 }

@@ -16,11 +16,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install Gradle
+      - name: Install Gradle 9.6
         run: |
-          curl -L -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.13-bin.zip
+          curl -L -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-9.6-bin.zip
           unzip -q /tmp/gradle.zip -d /tmp
-          echo "/tmp/gradle-8.13/bin" >> "$GITHUB_PATH"
+          echo "/tmp/gradle-9.6/bin" >> "$GITHUB_PATH"
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug
       - name: Upload APK

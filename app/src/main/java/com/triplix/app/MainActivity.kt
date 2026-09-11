@@ -7,6 +7,6 @@ import androidx.activity.compose.setContent
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { TriplixV7App() }
+        setContent { TriplixV8App() }
     }
 }

@@ -51,7 +51,6 @@ jobs:
               s = v6.read_text()
               nl = chr(10)
               s = s.replace('import androidx.compose.foundation.background', 'import androidx.compose.animation.core.animateFloatAsState' + nl + 'import androidx.compose.animation.core.spring' + nl + 'import androidx.compose.foundation.background')
-              s = s.replace('import androidx.compose.runtime.Composable', 'import androidx.compose.runtime.Composable')
               s = s.replace('import androidx.compose.ui.draw.clip', 'import androidx.compose.ui.draw.clip' + nl + 'import androidx.compose.ui.draw.scale')
               lines = s.splitlines()
               replacement = [
@@ -86,6 +85,19 @@ jobs:
                   raise SystemExit('V6 ToolV6 marker not found')
               lines[start:end] = replacement
               v6.write_text(nl.join(lines) + nl)
+
+          v7 = Path('app/src/main/java/com/triplix/app/TriplixV7.kt')
+          if v7.exists():
+              s = v7.read_text()
+              s = s.replace('private enum class Page { HOME, LEVELS, GAME }', 'private enum class PageV7 { HOME, LEVELS, GAME }')
+              s = s.replace('Page.HOME', 'PageV7.HOME').replace('Page.LEVELS', 'PageV7.LEVELS').replace('Page.GAME', 'PageV7.GAME')
+              s = s.replace('mutableStateOf(Page.HOME)', 'mutableStateOf(PageV7.HOME)')
+              s = s.replace('import androidx.compose.animation.AnimatedVisibility\n', '')
+              s = s.replace('import androidx.compose.animation.fadeIn\n', '').replace('import androidx.compose.animation.fadeOut\n', '')
+              old = '''            AnimatedVisibility(visible = burstToken > 0, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.Center)) { Text(burstText, color = Gold, fontSize = 27.sp, fontWeight = FontWeight.Black, modifier = Modifier.background(Color.Black.copy(.38f), RoundedCornerShape(20.dp)).padding(horizontal = 18.dp, vertical = 10.dp)) }'''
+              new = '''            if (burstToken > 0) { Text(burstText, color = Gold, fontSize = 27.sp, fontWeight = FontWeight.Black, modifier = Modifier.align(Alignment.Center).background(Color.Black.copy(.38f), RoundedCornerShape(20.dp)).padding(horizontal = 18.dp, vertical = 10.dp)) }'''
+              s = s.replace(old, new)
+              v7.write_text(s)
           PY
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug

@@ -19,134 +19,30 @@ import bottle from '@iconify-icons/game-icons/health-potion'
 import './styles.css'
 import './layered.css'
 
-const pack = {
-  fruit:[strawberry,banana,grapes,lemon,watermelon,bottle],
-  crystal:[crystalCluster,crystalShine,topaz,minerals,crystalWand,crystalBall],
-  magic:[magicPotion,crystalBall,crystalWand,crystalShine,bottle,minerals],
-  space:[rocket,crystalShine,topaz,crystalBall,minerals,crystalCluster],
-  friends:[cat,bottle,crystalBall,crystalShine,strawberry,crystalWand],
-} as const
-
-const worlds = {
-  Meyve:{title:'Meyve Bahçesi',tagline:'Tatlı eşleşmeler',icons:pack.fruit,colors:['#ef6680','#f7bb50','#63cf7d','#4faee9','#a37cf1','#ec8b59'],bg:'orchard'},
-  Kristal:{title:'Kristal Dünyası',tagline:'Parla ve patla',icons:pack.crystal,colors:['#4baeff','#5978ff','#55d59d','#ad66ff','#ff6885','#e7be51'],bg:'crystal'},
-  Sihir:{title:'Sihirli Objeler',tagline:'Büyük maceralar',icons:pack.magic,colors:['#9b70ef','#5e9dff','#ce6fe0','#78dbcf','#dd9b5d','#8784dc'],bg:'magic'},
-  Kozmik:{title:'Kozmik Serüven',tagline:'Parlak üçlüler',icons:pack.space,colors:['#4ca8ff','#7e78ff','#6a9aff','#69d5ac','#ffc857','#ba86ff'],bg:'space'},
-  Dostlar:{title:'Sevimli Dostlar',tagline:'Tatlı karakterler',icons:pack.friends,colors:['#ef8ea5','#b7a57e','#7e99cf','#af81e2','#e97878','#75c99e'],bg:'friends'},
-  Antik:{title:'Antik Semboller',tagline:'Zamanı aşanlar',icons:pack.crystal,colors:['#d5ac58','#6c98c7','#d7b76c','#8c7454','#63a27c','#b88655'],bg:'ancient'},
-  Dogal:{title:'Doğa Elementleri',tagline:'Doğanın gücü',icons:pack.magic,colors:['#63d17c','#4caee4','#ed6d5e','#7e9ef0','#9d8465','#e18bb1'],bg:'nature'},
-  Mevsim:{title:'Mevsimler',tagline:'Her mevsim farklı',icons:pack.fruit,colors:['#71aef0','#ee9ab9','#ffc85a','#e18a67','#c87957','#83a8d9'],bg:'season'},
-  Koleksiyon:{title:'Özel Koleksiyon',tagline:'TRIPLIX özel',icons:pack.crystal,colors:['#e0b74f','#e66f85','#57a9ed','#62ca90','#f4ba4f','#9b7be9'],bg:'collection'}
-} as const
+const pack={fruit:[strawberry,banana,grapes,lemon,watermelon,bottle],crystal:[crystalCluster,crystalShine,topaz,minerals,crystalWand,crystalBall],magic:[magicPotion,crystalBall,crystalWand,crystalShine,bottle,minerals],space:[rocket,crystalShine,topaz,crystalBall,minerals,crystalCluster],friends:[cat,bottle,crystalBall,crystalShine,strawberry,crystalWand]} as const
+const worlds={Meyve:{title:'Meyve Bahçesi',tagline:'Tatlı eşleşmeler',icons:pack.fruit,colors:['#ef6680','#f7bb50','#63cf7d','#4faee9','#a37cf1','#ec8b59'],bg:'orchard'},Kristal:{title:'Kristal Dünyası',tagline:'Parla ve patla',icons:pack.crystal,colors:['#4baeff','#5978ff','#55d59d','#ad66ff','#ff6885','#e7be51'],bg:'crystal'},Sihir:{title:'Sihirli Objeler',tagline:'Büyük maceralar',icons:pack.magic,colors:['#9b70ef','#5e9dff','#ce6fe0','#78dbcf','#dd9b5d','#8784dc'],bg:'magic'},Kozmik:{title:'Kozmik Serüven',tagline:'Parlak üçlüler',icons:pack.space,colors:['#4ca8ff','#7e78ff','#6a9aff','#69d5ac','#ffc857','#ba86ff'],bg:'space'},Dostlar:{title:'Sevimli Dostlar',tagline:'Tatlı karakterler',icons:pack.friends,colors:['#ef8ea5','#b7a57e','#7e99cf','#af81e2','#e97878','#75c99e'],bg:'friends'},Antik:{title:'Antik Semboller',tagline:'Zamanı aşanlar',icons:pack.crystal,colors:['#d5ac58','#6c98c7','#d7b76c','#8c7454','#63a27c','#b88655'],bg:'ancient'},Dogal:{title:'Doğa Elementleri',tagline:'Doğanın gücü',icons:pack.magic,colors:['#63d17c','#4caee4','#ed6d5e','#7e9ef0','#9d8465','#e18bb1'],bg:'nature'},Mevsim:{title:'Mevsimler',tagline:'Her mevsim farklı',icons:pack.fruit,colors:['#71aef0','#ee9ab9','#ffc85a','#e18a67','#c87957','#83a8d9'],bg:'season'},Koleksiyon:{title:'Özel Koleksiyon',tagline:'TRIPLIX özel',icons:pack.crystal,colors:['#e0b74f','#e66f85','#57a9ed','#62ca90','#f4ba4f','#9b7be9'],bg:'collection'}} as const
 
 type World=keyof typeof worlds
 type Screen='home'|'worlds'|'levels'|'game'
 type Status='playing'|'won'|'lost'
 type Stone={id:number;kind:number;x:number;y:number;layer:number}
 type LevelConfig={stones:number;kinds:number;moves:number;layers:number}
-
-function getLevelConfig(level:number):LevelConfig{
-  const safe=Math.max(1,Math.min(60,level))
-  const stones=27+Math.floor((safe-1)/5)*3
-  const kinds=Math.min(6,3+Math.floor((safe-1)/15))
-  const layers=safe<11?1:safe<26?2:safe<46?3:4
-  return {stones,kinds,moves:stones+5,layers}
-}
-
-function makeBoard(seed:number,world:World,level:number):Stone[]{
-  const config=getLevelConfig(level)
-  const stones:Array<Stone>=[]
-  const cells=48
-  const perLayer=Math.ceil(config.stones/config.layers)
-  const random=()=>{const x=Math.sin(seed*999+stones.length*37+config.stones*13+level*17)*10000;return x-Math.floor(x)}
-  for(let i=0;i<config.stones;i++){
-    const layer=Math.min(config.layers-1,Math.floor(i/perLayer))
-    const index=i%perLayer
-    const cell=(index*11+layer*17+seed*3)%cells
-    const x=cell%8
-    const y=Math.floor(cell/8)
-    const group=Math.floor(i/3)
-    const kind=(seed*3+group*2)%config.kinds
-    stones.push({id:seed*1000+i,kind,x,y,layer})
-  }
-  for(let i=stones.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[stones[i],stones[j]]=[stones[j],stones[i]]}
-  return stones
-}
-
+type Flight={stone:Stone;fromX:number;fromY:number;toX:number;toY:number}
+function getLevelConfig(level:number):LevelConfig{const safe=Math.max(1,Math.min(60,level));const stones=27+Math.floor((safe-1)/5)*3;const kinds=Math.min(6,3+Math.floor((safe-1)/15));const layers=safe<11?1:safe<26?2:safe<46?3:4;return{stones,kinds,moves:stones+5,layers}}
+function makeBoard(seed:number,world:World,level:number):Stone[]{const c=getLevelConfig(level),stones:Array<Stone>=[],cells=48,perLayer=Math.ceil(c.stones/c.layers);const random=()=>{const x=Math.sin(seed*999+stones.length*37+c.stones*13+level*17)*10000;return x-Math.floor(x)};for(let i=0;i<c.stones;i++){const layer=Math.min(c.layers-1,Math.floor(i/perLayer)),index=i%perLayer,cell=(index*11+layer*17+seed*3)%cells,x=cell%8,y=Math.floor(cell/8),group=Math.floor(i/3),kind=(seed*3+group*2)%c.kinds;stones.push({id:seed*1000+i,kind,x,y,layer})}for(let i=stones.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[stones[i],stones[j]]=[stones[j],stones[i]]}return stones}
 function GameIcon({icon}:{icon:any}){return <Icon icon={icon} className="game-icon" aria-hidden="true"/>}
-
 function App(){
-  const [screen,setScreen]=useState<Screen>('home')
-  const [world,setWorld]=useState<World>('Meyve')
-  const [level,setLevel]=useState(1)
-  const [score,setScore]=useState(0)
-  const [combo,setCombo]=useState(0)
-  const [moves,setMoves]=useState(getLevelConfig(1).moves)
-  const [triples,setTriples]=useState(0)
-  const [tray,setTray]=useState<Stone[]>([])
-  const [board,setBoard]=useState<Stone[]>(makeBoard(1,'Meyve',1))
-  const [status,setStatus]=useState<Status>('playing')
-  const [message,setMessage]=useState('3 aynı taşı seç • üçüncüde patlat!')
-  const [selectedId,setSelectedId]=useState<number|null>(null)
-  const theme=worlds[world]
-  const config=getLevelConfig(level)
-  const counts=useMemo(()=>tray.reduce<Record<number,number>>((a,s)=>{a[s.kind]=(a[s.kind]??0)+1;return a},{}),[tray])
-  const isBlocked=(stone:Stone)=>board.some(other=>other.id!==stone.id&&other.layer>stone.layer&&other.x===stone.x&&other.y===stone.y)
-
-  useEffect(()=>{
-    const onPop=()=>{const s=window.history.state?.triplixScreen as Screen|undefined;setScreen(s??'home')}
-    if(!window.history.state?.triplixScreen) window.history.replaceState({triplixScreen:'home'},'',window.location.href)
-    window.addEventListener('popstate',onPop)
-    return()=>window.removeEventListener('popstate',onPop)
-  },[])
-
-  function nav(next:Screen){window.history.pushState({triplixScreen:next},'',window.location.href);setScreen(next)}
-  function home(){nav('home')}
-
-  useEffect(()=>{
-    if(status!=='playing')return
-    const entry=Object.entries(counts).find(([,c])=>c>=3)
-    if(!entry){
-      if(board.length===0){setStatus('won');setMessage('Tüm taşlar temizlendi. Bölüm tamamlandı!')}
-      else if(tray.length>=7){setStatus('lost');setMessage('Tepsi doldu! Bu tur kaçtı.')}
-      return
-    }
-    const kind=Number(entry[0])
-    const t=window.setTimeout(()=>{
-      setTray(cur=>{let removed=0;return cur.filter(s=>{if(s.kind===kind&&removed<3){removed++;return false}return true})})
-      setTriples(v=>v+1)
-      setCombo(v=>v+1)
-      setScore(v=>v+125+combo*25)
-      setMessage('ÜÇLÜ PATLADI! +100')
-    },260)
-    return()=>window.clearTimeout(t)
-  },[counts,status,board.length,combo,tray.length])
-
-  function start(nextLevel:number,nextWorld:World=world){
-    const safe=Math.max(1,Math.min(60,nextLevel))
-    const nextConfig=getLevelConfig(safe)
-    setLevel(safe);setWorld(nextWorld);setScore(0);setCombo(0);setMoves(nextConfig.moves);setTriples(0);setTray([])
-    setBoard(makeBoard(safe,nextWorld,safe));setStatus('playing');setSelectedId(null);setMessage(`${nextConfig.stones} taş • ${nextConfig.kinds} farklı simge • ${nextConfig.layers} katman • üçlüleri patlat!`);nav('game')
-  }
-  function selectStone(stone:Stone){
-    if(status!=='playing'||moves<=0||tray.length>=7||selectedId!==null||isBlocked(stone))return
-    setSelectedId(stone.id)
-    window.setTimeout(()=>{setBoard(cur=>cur.filter(x=>x.id!==stone.id));setTray(cur=>[...cur,stone]);setMoves(v=>Math.max(0,v-1));setSelectedId(null);setMessage('Taş parıltı iziyle tepsiye iniyor…')},180)
-  }
-  function shuffle(){if(status==='playing'){setBoard(cur=>[...cur].sort(()=>Math.random()-.5));setMessage('Tahta karıştırıldı.')}}
-  function hint(){if(status==='playing'){const s=board.find(x=>!isBlocked(x)&&counts[x.kind]>0)||board.find(x=>!isBlocked(x));if(s)setMessage(isBlocked(s)?'Üstteki taşları temizle.':'İpucu: aynı simgeden üç tane kovala.')}}
-
-  return <main className={`app-shell world-${theme.bg}`}>
-    <div className="atmo atmo-one"/><div className="atmo atmo-two"/>
-    <header className="topbar"><button className="brand" onClick={home}><span className="brand-mark">◆</span><b>TRIPLIX</b></button><div className="top-actions"><div className="wallet">◉ <b>400</b></div><button className="sound">♪</button></div></header>
-
-    {screen==='home'&&<section className="home"><div className="hero-world"><div className="hero-vignette"/><div className="hero-copy"><span className="kicker">TRIPLIX WORLDS</span><h1>Bir Taştan<br/><em>Daha Fazlası!</em></h1><p>Farklı dünyaları keşfet. Taşları seç, üçlüleri patlat, combo'yu büyüt.</p><div className="home-buttons"><button className="primary" onClick={()=>nav('worlds')}>DÜNYANI SEÇ <b>→</b></button><button className="ghost" onClick={()=>start(1,world)}>HEMEN OYNA</button></div></div><div className="showcase-stones"><div className="show-stone ss1"><GameIcon icon={theme.icons[0]}/></div><div className="show-stone ss2"><GameIcon icon={theme.icons[1]}/></div><div className="show-stone ss3"><GameIcon icon={theme.icons[2]}/></div><div className="show-stone ss4"><GameIcon icon={theme.icons[3]}/></div></div></div><div className="quick-row"><div><b>9</b><small>DÜNYA</small></div><div><b>60</b><small>BÖLÜM</small></div><div><b>∞</b><small>COMBO</small></div></div><div className="home-links"><button className="feature-link" onClick={()=>nav('worlds')}><span>◇</span><div><b>Oyun Dünyaları</b><small>Her dünyada farklı taş seti</small></div><strong>›</strong></button><button className="feature-link" onClick={()=>nav('levels')}><span>◎</span><div><b>Bölüm Haritası</b><small>{level}/60 ilerleme</small></div><strong>›</strong></button></div></section>}
-
-    {screen==='worlds'&&<section className="subscreen compact-worlds"><div className="page-head"><button className="back" onClick={()=>nav('home')}>‹</button><div><span>DÜNYANI SEÇ</span><h2>Macera Haritası</h2></div></div><p className="page-copy">Bir dünya seç ve kendi taş koleksiyonunu keşfet.</p><div className="world-grid">{(Object.keys(worlds) as World[]).map(w=><button key={w} className={`world-card ${w===world?'active':''}`} onClick={()=>{setWorld(w);nav('levels')}}><div className={`world-preview ${worlds[w].bg}`}><GameIcon icon={worlds[w].icons[0]}/><span className="mini-icons">{worlds[w].icons.slice(1,4).map((ic,i)=><GameIcon key={i} icon={ic}/>)}</span></div><div className="world-card-copy"><b>{worlds[w].title}</b><small>{worlds[w].tagline}</small></div><strong>{w===world?'✓':'›'}</strong></button>)}</div></section>}
-
-    {screen==='levels'&&<section className="subscreen"><div className="page-head"><button className="back" onClick={()=>nav('worlds')}>‹</button><div><span>{theme.title.toUpperCase()}</span><h2>Bölüm Haritası</h2></div></div><div className="map-banner"><div className={`map-art ${theme.bg}`}><GameIcon icon={theme.icons[0]}/></div><div><b>{theme.title}</b><small>Seviye {level} / 60 • {getLevelConfig(level).stones} taş • {getLevelConfig(level).layers} katman</small><div className="bar"><i style={{width:`${Math.min(100,level/60*100)}%`}}/></div></div></div><div className="level-path">{Array.from({length:60},(_,i)=>i+1).map(n=>{const locked=n>level+1;return <button disabled={locked} key={n} className={`level-node ${n===level?'current':''} ${locked?'locked':''}`} onClick={()=>start(n,world)}><b>{locked?'·':n}</b><span>{locked?'':'★'.repeat(n<level?3:1)+'☆'.repeat(n<level?0:2)}</span></button>})}</div></section>}
-
-    {screen==='game'&&<section className="game"><div className="game-head"><button className="back" onClick={()=>nav('levels')}>‹</button><div className="level-sign"><span>{theme.title}</span><b>BÖLÜM {level} • {config.stones} TAŞ • {config.layers} KAT</b></div><div className="coins">◉ 400</div></div><div className="goal-strip"><div><small>HAMLE</small><b>{moves}</b></div><div><small>COMBO</small><b className="gold">x{combo}</b></div><div><small>KALAN</small><b>{board.length}/{config.stones}</b></div><div><small>SKOR</small><b>{score}</b></div></div><div className={`game-scene ${theme.bg}`}><div className="scene-lights"/><div className="layer-badge">{config.layers}D KATMAN</div><div className="game-board" style={{'--board-cols':8} as React.CSSProperties}>{board.map(stone=>{const blocked=isBlocked(stone);return <button disabled={status!=='playing'||blocked} key={stone.id} className={`stone ${selectedId===stone.id?'selected':''} ${blocked?'blocked':''}`} style={{gridColumn:stone.x+1,gridRow:stone.y+1,zIndex:stone.layer+1,'--depth':stone.layer} as React.CSSProperties} onClick={()=>selectStone(stone)}><GameIcon icon={theme.icons[stone.kind]}/>{blocked&&<span className="stone-cover"/>}</button>})}</div></div><div className="tray-wrap"><div className="tray-head"><b>SEÇİLEN TAŞLAR</b><span>{tray.length}/7</span></div><div className="tray">{Array.from({length:7},(_,i)=>{const s=tray[i];return s?<div className="tray-stone" key={i} style={{background:theme.colors[s.kind]}}><GameIcon icon={theme.icons[s.kind]}/></div>:<div className="tray-slot" key={i}/>} )}</div></div><div className={`message ${status}`}>{message}</div>{status!=='playing'&&<div className="result"><div className="result-burst">{status==='won'?'★':'×'}</div><b>{status==='won'?'BÖLÜM TAMAMLANDI!':'TEPSİ DOLDU!'}</b><small>{status==='won'?'Tahtadaki tüm taşları temizledin.':'Daha iyi bir sıra kurup tekrar dene.'}</small><div><button className="primary" onClick={()=>start(status==='won'?level+1:level,world)}>{status==='won'?'SONRAKİ BÖLÜM':'TEKRAR OYNA'} <b>→</b></button><button className="ghost" onClick={()=>nav('levels')}>BÖLÜMLER</button></div></div>}<div className="tools"><button disabled={status!=='playing'} onClick={shuffle}>↝<span>Karıştır</span></button><button disabled={status!=='playing'} onClick={hint}>◇<span>İpucu</span></button><button onClick={()=>start(level,world)}>↻<span>Sıfırla</span></button></div></section>}
-  </main>
-}
+ const[screen,setScreen]=useState<Screen>('home'),[world,setWorld]=useState<World>('Meyve'),[level,setLevel]=useState(1),[score,setScore]=useState(0),[combo,setCombo]=useState(0),[moves,setMoves]=useState(getLevelConfig(1).moves),[triples,setTriples]=useState(0),[tray,setTray]=useState<Stone[]>([]),[board,setBoard]=useState<Stone[]>(makeBoard(1,'Meyve',1)),[status,setStatus]=useState<Status>('playing'),[message,setMessage]=useState('3 aynı taşı seç • üçüncüde patlat!'),[selectedId,setSelectedId]=useState<number|null>(null),[flight,setFlight]=useState<Flight|null>(null)
+ const theme=worlds[world],config=getLevelConfig(level),counts=useMemo(()=>tray.reduce<Record<number,number>>((a,s)=>{a[s.kind]=(a[s.kind]??0)+1;return a},{}),[tray]),isBlocked=(stone:Stone)=>board.some(o=>o.id!==stone.id&&o.layer>stone.layer&&o.x===stone.x&&o.y===stone.y)
+ useEffect(()=>{const onPop=()=>setScreen(window.history.state?.triplixScreen as Screen|undefined??'home');if(!window.history.state?.triplixScreen)window.history.replaceState({triplixScreen:'home'},'',window.location.href);window.addEventListener('popstate',onPop);return()=>window.removeEventListener('popstate',onPop)},[])
+ function nav(next:Screen){window.history.pushState({triplixScreen:next},'',window.location.href);setScreen(next)} function home(){nav('home')}
+ useEffect(()=>{if(status!=='playing')return;const entry=Object.entries(counts).find(([,c])=>c>=3);if(!entry){if(board.length===0){setStatus('won');setMessage('Tüm taşlar temizlendi. Bölüm tamamlandı!')}else if(tray.length>=7){setStatus('lost');setMessage('Tepsi doldu! Bu tur kaçtı.')}return}const kind=Number(entry[0]),t=window.setTimeout(()=>{setTray(cur=>{let removed=0;return cur.filter(s=>{if(s.kind===kind&&removed<3){removed++;return false}return true})});setTriples(v=>v+1);setCombo(v=>v+1);setScore(v=>v+125+combo*25);setMessage('ÜÇLÜ PATLADI! +100')},260);return()=>window.clearTimeout(t)},[counts,status,board.length,combo,tray.length])
+ function start(nextLevel:number,nextWorld:World=world){const safe=Math.max(1,Math.min(60,nextLevel)),c=getLevelConfig(safe);setLevel(safe);setWorld(nextWorld);setScore(0);setCombo(0);setMoves(c.moves);setTriples(0);setTray([]);setBoard(makeBoard(safe,nextWorld,safe));setStatus('playing');setSelectedId(null);setFlight(null);setMessage(`${c.stones} taş • ${c.kinds} farklı simge • ${c.layers} katman • üçlüleri patlat!`);nav('game')}
+ function selectStone(stone:Stone){if(status!=='playing'||moves<=0||tray.length>=7||selectedId!==null||flight||isBlocked(stone))return;const el=document.querySelector(`[data-stone-id="${stone.id}"]`) as HTMLElement|null,target=document.querySelector(`.tray-slot[data-slot="${tray.length}"]`) as HTMLElement|null;if(!el||!target)return;const a=el.getBoundingClientRect(),b=target.getBoundingClientRect();setSelectedId(stone.id);setFlight({stone,fromX:a.left+a.width/2,fromY:a.top+a.height/2,toX:b.left+b.width/2,toY:b.top+b.height/2});window.setTimeout(()=>{setBoard(cur=>cur.filter(x=>x.id!==stone.id));setTray(cur=>[...cur,stone]);setMoves(v=>Math.max(0,v-1));setSelectedId(null);setFlight(null);setMessage('Taş parıltı iziyle tepsiye indi!')},560)}
+ function shuffle(){if(status==='playing'){setBoard(cur=>[...cur].sort(()=>Math.random()-.5));setMessage('Tahta karıştırıldı.')}} function hint(){if(status==='playing'){const s=board.find(x=>!isBlocked(x)&&counts[x.kind]>0)||board.find(x=>!isBlocked(x));if(s)setMessage('İpucu: aynı simgeden üç tane kovala.')}}
+ return <main className={`app-shell world-${theme.bg}`}><div className="atmo atmo-one"/><div className="atmo atmo-two"/><header className="topbar"><button className="brand" onClick={home}><span className="brand-mark">◆</span><b>TRIPLIX</b></button><div className="top-actions"><div className="wallet">◉ <b>400</b></div><button className="sound">♪</button></div></header>
+ {screen==='home'&&<section className="home"><div className="hero-world"><div className="hero-vignette"/><div className="hero-copy"><span className="kicker">TRIPLIX WORLDS</span><h1>Bir Taştan<br/><em>Daha Fazlası!</em></h1><p>Farklı dünyaları keşfet. Taşları seç, üçlüleri patlat, combo'yu büyüt.</p><div className="home-buttons"><button className="primary" onClick={()=>nav('worlds')}>DÜNYANI SEÇ <b>→</b></button><button className="ghost" onClick={()=>start(1,world)}>HEMEN OYNA</button></div></div><div className="showcase-stones"><div className="show-stone ss1"><GameIcon icon={theme.icons[0]}/></div><div className="show-stone ss2"><GameIcon icon={theme.icons[1]}/></div><div className="show-stone ss3"><GameIcon icon={theme.icons[2]}/></div><div className="show-stone ss4"><GameIcon icon={theme.icons[3]}/></div></div></div><div className="quick-row"><div><b>9</b><small>DÜNYA</small></div><div><b>60</b><small>BÖLÜM</small></div><div><b>∞</b><small>COMBO</small></div></div><div className="home-links"><button className="feature-link" onClick={()=>nav('worlds')}><span>◇</span><div><b>Oyun Dünyaları</b><small>Her dünyada farklı taş seti</small></div><strong>›</strong></button><button className="feature-link" onClick={()=>nav('levels')}><span>◎</span><div><b>Bölüm Haritası</b><small>{level}/60 ilerleme</small></div><strong>›</strong></button></div></section>}
+ {screen==='worlds'&&<section className="subscreen compact-worlds"><div className="page-head"><button className="back" onClick={()=>nav('home')}>‹</button><div><span>DÜNYANI SEÇ</span><h2>Macera Haritası</h2></div></div><p className="page-copy">Bir dünya seç ve kendi taş koleksiyonunu keşfet.</p><div className="world-grid">{(Object.keys(worlds) as World[]).map(w=><button key={w} className={`world-card ${w===world?'active':''}`} onClick={()=>{setWorld(w);nav('levels')}}><div className={`world-preview ${worlds[w].bg}`}><GameIcon icon={worlds[w].icons[0]}/><span className="mini-icons">{worlds[w].icons.slice(1,4).map((ic,i)=><GameIcon key={i} icon={ic}/>)}</span></div><div className="world-card-copy"><b>{worlds[w].title}</b><small>{worlds[w].tagline}</small></div><strong>{w===world?'✓':'›'}</strong></button>)}</div></section>}
+ {screen==='levels'&&<section className="subscreen"><div className="page-head"><button className="back" onClick={()=>nav('worlds')}>‹</button><div><span>{theme.title.toUpperCase()}</span><h2>Bölüm Haritası</h2></div></div><div className="map-banner"><div className={`map-art ${theme.bg}`}><GameIcon icon={theme.icons[0]}/></div><div><b>{theme.title}</b><small>Seviye {level} / 60 • {getLevelConfig(level).stones} taş • {getLevelConfig(level).layers} katman</small><div className="bar"><i style={{width:`${Math.min(100,level/60*100)}%`}}/></div></div></div><div className="level-path">{Array.from({length:60},(_,i)=>i+1).map(n=>{const locked=n>level+1;return <button disabled={locked} key={n} className={`level-node ${n===level?'current':''} ${locked?'locked':''}`} onClick={()=>start(n,world)}><b>{locked?'·':n}</b><span>{locked?'':'★'.repeat(n<level?3:1)+'☆'.repeat(n<level?0:2)}</span></button>})}</div></section>}
+ {screen==='game'&&<section className="game"><div className="game-head"><button className="back" onClick={()=>nav('levels')}>‹</button><div className="level-sign"><span>{theme.title}</span><b>BÖLÜM {level} • {config.stones} TAŞ • {config.layers} KAT</b></div><div className="coins">◉ 400</div></div><div className="goal-strip"><div><small>HAMLE</small><b>{moves}</b></div><div><small>COMBO</small><b className="gold">x{combo}</b></div><div><small>KALAN</small><b>{board.length}/{config.stones}</b></div><div><small>SKOR</small><b>{score}</b></div></div><div className={`game-scene ${theme.bg}`}><div className="scene-lights"/><div className="layer-badge">{config.layers}D KATMAN</div><div className="game-board" style={{'--board-cols':8} as React.CSSProperties}>{board.map(stone=>{const blocked=isBlocked(stone);return <button data-stone-id={stone.id} disabled={status!=='playing'||blocked} key={stone.id} className={`stone layer-${stone.layer} ${blocked?'blocked':''} ${selectedId===stone.id?'selected':''}`} style={{background:theme.colors[stone.kind],transform:`translate(${stone.layer*4}px,${stone.layer*-4}px)`}} onClick={()=>selectStone(stone)}><GameIcon icon={theme.icons[stone.kind]}/></button>})}</div>{flight&&<div className="flight-fx" style={{'--fx':`${flight.fromX}px`,'--fy':`${flight.fromY}px`,'--tx':`${flight.toX}px`,'--ty':`${flight.toY}px`} as React.CSSProperties}><div className="flight-trail">{Array.from({length:8},(_,i)=><i key={i} style={{'--i':i} as React.CSSProperties}/>)}</div><div className="flight-stone" style={{background:theme.colors[flight.stone.kind]}}><GameIcon icon={theme.icons[flight.stone.kind]}/></div></div>}</div><div className="tray-wrap"><div className="tray-head"><b>SEÇİLEN TAŞLAR</b><span>{tray.length}/7</span></div><div className="tray">{Array.from({length:7},(_,i)=>{const s=tray[i];return s?<div className="tray-stone" key={i} style={{background:theme.colors[s.kind]}}><GameIcon icon={theme.icons[s.kind]}/></div>:<div className="tray-slot" data-slot={i} key={i}/>} )}</div></div><div className={`message ${status}`}>{message}</div>{status!=='playing'&&<div className="result"><div className="result-burst">{status==='won'?'★':'×'}</div><b>{status==='won'?'BÖLÜM TAMAMLANDI!':'TEPSİ DOLDU!'}</b><small>{status==='won'?'Tahtadaki tüm taşları temizledin.':'Daha iyi bir sıra kurup tekrar dene.'}</small><div><button className="primary" onClick={()=>start(status==='won'?level+1:level,world)}>{status==='won'?'SONRAKİ BÖLÜM':'TEKRAR OYNA'} <b>→</b></button><button className="ghost" onClick={()=>nav('levels')}>BÖLÜMLER</button></div></div>}<div className="tools"><button disabled={status!=='playing'} onClick={shuffle}>↝<span>Karıştır</span></button><button disabled={status!=='playing'} onClick={hint}>◇<span>İpucu</span></button><button onClick={()=>start(level,world)}>↻<span>Sıfırla</span></button></div></section>}</main>}
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>)

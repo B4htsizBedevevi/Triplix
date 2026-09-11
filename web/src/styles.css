@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root { font-family: 'Manrope', system-ui, sans-serif; color: #f6f7fb; background: #080a10; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(circle at 20% 0%, #18202c 0, transparent 35%), #080a10; }
+button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+.app-shell { width: min(100%, 720px); min-height: 100vh; margin: auto; padding: 18px 18px 30px; }
+.topbar { height: 58px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.brand { background: transparent; display: flex; gap: 10px; align-items: center; font-weight: 800; letter-spacing: .08em; font-size: 18px; }
+.brand-mark { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: linear-gradient(135deg,#78f5a0,#26c778); color:#07100b; box-shadow: 0 8px 24px #21d4772b; }
+.wallet { background:#11151e; border:1px solid #222938; padding:9px 13px; border-radius:14px; font-weight:700; }
+.home-content { display:grid; gap:18px; }
+.hero-card { position:relative; overflow:hidden; min-height:285px; padding:28px; border:1px solid #262d3c; border-radius:28px; background: linear-gradient(135deg,#151b26,#0d1018 70%); box-shadow:0 24px 70px #0006; }
+.eyebrow { color:#7b879c; font-size:11px; font-weight:800; letter-spacing:.16em; }
+h1 { font-size:clamp(38px,10vw,64px); line-height:.98; letter-spacing:-.055em; margin:14px 0; }
+h1 em { color:#73f19b; font-style:normal; }
+.hero-card p { color:#9da7b8; max-width:350px; line-height:1.6; }
+.primary-btn { margin-top:12px; padding:14px 18px; border-radius:15px; background:#72ed9a; color:#07100b; font-weight:800; box-shadow:0 10px 28px #72ed9a30; }
+.primary-btn span { margin-left:20px; }
+.hero-orbit { position:absolute; right:-35px; bottom:-45px; width:210px; height:210px; border:1px solid #ffffff14; border-radius:50%; transform:rotate(-15deg); }
+.hero-orbit span { position:absolute; display:grid; place-items:center; width:55px; height:55px; border-radius:17px; background:#1c2330; border:1px solid #ffffff12; font-size:25px; }
+.hero-orbit span:nth-child(1){left:25px;top:65px}.hero-orbit span:nth-child(2){right:22px;top:35px}.hero-orbit span:nth-child(3){right:28px;bottom:35px}.hero-orbit span:nth-child(4){left:42px;bottom:18px}
+.section-head { display:flex; justify-content:space-between; align-items:center; }
+h2 { margin:0; font-size:18px; letter-spacing:-.02em; }
+.section-head button { background:transparent; color:#72ed9a; font-size:11px; font-weight:800; }
+.mode-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.mode-card { text-align:left; padding:18px; min-height:140px; border-radius:21px; background:#10141d; border:1px solid #202735; display:flex; flex-direction:column; gap:6px; transition:.18s; }
+.mode-card:hover,.mode-card.active { transform:translateY(-2px); border-color:#72ed9a66; background:#131a22; }
+.mode-icon { font-size:31px; margin-bottom:12px; }
+.mode-card strong { font-size:14px; }.mode-card span { color:#7f899a; font-size:11px; }
+.level-card { display:flex; align-items:center; justify-content:space-between; padding:20px; border-radius:22px; background:#10141d; border:1px solid #202735; }
+.level-card h2 { margin:5px 0 2px; font-size:23px; }.level-card p { margin:0;color:#7f899a;font-size:12px; }
+.circle-btn,.icon-btn { width:44px;height:44px;border-radius:50%;background:#1a212d;border:1px solid #2a3342;display:grid;place-items:center;font-weight:800; }
+.game-shell { padding-bottom:18px; }.game-topbar { margin-bottom:6px; }.game-title { text-align:center;display:flex;flex-direction:column;gap:2px; }.game-title span{font-size:10px;color:#73ed9b;font-weight:800;letter-spacing:.14em}.game-title strong{font-size:15px}.game-content{display:grid;gap:12px}
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }.stats-row div{background:#10141d;border:1px solid #202735;border-radius:14px;padding:9px 8px;text-align:center}.stats-row span{display:block;color:#687386;font-size:8px;font-weight:800;letter-spacing:.1em}.stats-row strong{display:block;margin-top:4px;font-size:16px}.stats-row small{font-size:10px;color:#697487}.combo-hot{color:#ffd66d}.progress{height:4px;background:#171c25;border-radius:8px;overflow:hidden}.progress i{display:block;height:100%;background:#73ed9b;border-radius:8px;transition:width .25s}
+.board-card{padding:9px;border-radius:24px;background:#10141d;border:1px solid #202735;box-shadow:0 18px 55px #0005}.board{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;aspect-ratio:1}.tile{min-width:0;aspect-ratio:1;border-radius:11px;background:#202733;display:grid;place-items:center;border:1px solid #ffffff0a;box-shadow:inset 0 1px #ffffff08;transition:transform .12s,filter .12s}.tile:hover{transform:scale(.92);filter:brightness(1.25)}.tile span{font-size:clamp(15px,5vw,25px);text-shadow:0 2px 10px #0005}.tile-0{background:#e56b6f}.tile-1{background:#4d8de8}.tile-2{background:#9b73e9}.tile-3{background:#55b98a}.tile-4{background:#e8ae54}.tile-5{background:#de78b0}
+.tray-card{padding:14px;border-radius:21px;background:#0e1219;border:1px solid #252d3b}.tray-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.tray-head strong{font-size:10px;letter-spacing:.13em}.tray-head span{font-size:10px;color:#687386}.tray{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}.tray-slot{aspect-ratio:1;border-radius:12px;border:1px dashed #30394a;background:#0b0e14;display:grid;place-items:center;transition:.15s}.tray-slot span{font-size:20px}.tray-slot.pair{box-shadow:0 0 0 2px #ffd66d66,0 0 18px #ffd66d22}.message{margin-top:11px;text-align:center;color:#8e98a9;font-size:11px;min-height:16px}.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tools button{height:45px;border-radius:14px;background:#121720;border:1px solid #222b39;color:#9aa5b5;font-size:16px}.tools span{font-size:9px;font-weight:800;letter-spacing:.06em;margin-left:4px}
+@media (min-width:650px){.home-content{grid-template-columns:1fr 1fr}.hero-card,.section-head,.level-card{grid-column:1/-1}.mode-grid{grid-column:1/-1;grid-template-columns:repeat(3,1fr)}.level-card{margin-top:0}.game-content{gap:14px}.board-card{padding:13px}.board{gap:7px}.tile{border-radius:13px}}
+@media (max-width:380px){.app-shell{padding-inline:12px}.hero-card{padding:22px}.stats-row div{padding:8px 4px}.stats-row strong{font-size:14px}.tools span{display:none}}

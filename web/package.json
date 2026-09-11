@@ -1,7 +1,7 @@
 {
   "name": "triplix-web",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
     "@iconify-icons/game-icons": "^2.0.0",
     "@iconify/react": "^6.0.2",
     "@vitejs/plugin-react": "latest",
+    "three": "0.186.0",
     "vite": "latest",
     "typescript": "latest",
     "react": "latest",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "@types/react-dom": "latest",
+    "@types/three": "0.185.4"
   }
 }

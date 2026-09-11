@@ -26,7 +26,10 @@ jobs:
           from pathlib import Path
           p = Path('app/src/main/java/com/triplix/app/MainActivity.kt')
           s = p.read_text()
+          s = s.replace('import androidx.compose.ui.graphics.Color', 'import androidx.compose.ui.graphics.Color\nimport androidx.compose.ui.graphics.graphicsLayer')
           s = s.replace('LinearProgressIndicator(progress={mission/5f},Modifier', 'LinearProgressIndicator(progress={mission/5f},modifier=Modifier')
+          s = s.replace('LinearProgressIndicator(progress = { mission / 5f }, Modifier', 'LinearProgressIndicator(progress = { mission / 5f }, modifier = Modifier')
+          s = s.replace('Button(reward, enabled = mission >= 5, Modifier.fillMaxWidth()', 'Button(onClick = reward, enabled = mission >= 5, modifier = Modifier.fillMaxWidth()')
           s = s.replace('Row(Modifier.padding(14.dp),Alignment.CenterVertically)', 'Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically)')
           s = s.replace('Row(Modifier.fillMaxWidth(),Alignment.CenterVertically)', 'Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically)')
           s = s.replace('Button(reset,Modifier.fillMaxWidth()', 'Button(::reset,Modifier.fillMaxWidth()')

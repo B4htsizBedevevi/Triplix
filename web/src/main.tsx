@@ -56,7 +56,7 @@ function App(){
   const [level,setLevel]=useState(1)
   const [score,setScore]=useState(0)
   const [combo,setCombo]=useState(0)
-  const [moves,setMoves]=useState(30)
+  const [moves,setMoves]=useState(55)
   const [triples,setTriples]=useState(0)
   const [tray,setTray]=useState<Stone[]>([])
   const [board,setBoard]=useState<Stone[]>(makeBoard(1,'Meyve'))
@@ -64,7 +64,6 @@ function App(){
   const [message,setMessage]=useState('3 aynı taşı seç • üçüncüde patlat!')
   const [selectedId,setSelectedId]=useState<number|null>(null)
   const theme=worlds[world]
-  const goal=5+Math.floor(level/5)
   const counts=useMemo(()=>tray.reduce<Record<number,number>>((a,s)=>{a[s.kind]=(a[s.kind]??0)+1;return a},{}),[tray])
 
   useEffect(()=>{
@@ -80,20 +79,25 @@ function App(){
   useEffect(()=>{
     if(status!=='playing')return
     const entry=Object.entries(counts).find(([,c])=>c>=3)
-    if(!entry){if(tray.length>=7){setStatus('lost');setMessage('Tepsi doldu! Bu tur kaçtı.')}return}
+    if(!entry){
+      if(board.length===0){setStatus('won');setMessage('Tüm taşlar temizlendi. Bölüm tamamlandı!')}
+      else if(tray.length>=7){setStatus('lost');setMessage('Tepsi doldu! Bu tur kaçtı.')}
+      return
+    }
     const kind=Number(entry[0])
     const t=window.setTimeout(()=>{
       setTray(cur=>{let removed=0;return cur.filter(s=>{if(s.kind===kind&&removed<3){removed++;return false}return true})})
-      setTriples(v=>{const next=v+1;if(next>=goal){setStatus('won');setMessage('Mükemmel! Bölüm tamamlandı.')}else setMessage('ÜÇLÜ PATLADI! +100');return next})
+      setTriples(v=>v+1)
       setCombo(v=>v+1)
       setScore(v=>v+125+combo*25)
+      setMessage('ÜÇLÜ PATLADI! +100')
     },260)
     return()=>window.clearTimeout(t)
-  },[counts,status,goal,combo,tray.length])
+  },[counts,status,board.length,combo,tray.length])
 
   function start(nextLevel:number,nextWorld:World=world){
     const safe=Math.max(1,Math.min(60,nextLevel))
-    setLevel(safe);setWorld(nextWorld);setScore(0);setCombo(0);setMoves(Math.max(20,32-Math.floor(safe/8)*2));setTriples(0);setTray([])
+    setLevel(safe);setWorld(nextWorld);setScore(0);setCombo(0);setMoves(55);setTriples(0);setTray([])
     setBoard(makeBoard(safe,nextWorld));setStatus('playing');setSelectedId(null);setMessage('3 aynı taşı seç • üçüncüde patlat!');nav('game')
   }
   function selectStone(stone:Stone){
@@ -101,27 +105,20 @@ function App(){
     setSelectedId(stone.id)
     window.setTimeout(()=>{setBoard(cur=>cur.filter(x=>x.id!==stone.id));setTray(cur=>[...cur,stone]);setMoves(v=>Math.max(0,v-1));setSelectedId(null);setMessage('Taş parıltı iziyle tepsiye iniyor…')},180)
   }
-  function shuffle(){if(status==='playing'){setBoard(cur=>[...cur].sort(()=>Math.random()-.5));setMessage('Tahta karıştırıldı ✨')}}
+  function shuffle(){if(status==='playing'){setBoard(cur=>[...cur].sort(()=>Math.random()-.5));setMessage('Tahta karıştırıldı.')}}
   function hint(){if(status==='playing'){const s=board.find(x=>counts[x.kind]>0)||board[0];if(s)setMessage('İpucu: aynı simgeden üç tane kovala.')}}
 
   return <main className={`app-shell world-${theme.bg}`}>
     <div className="atmo atmo-one"/><div className="atmo atmo-two"/>
-    <header className="topbar">
-      <button className="brand" onClick={home}><span className="brand-mark">◆</span><b>TRIPLIX</b></button>
-      <div className="top-actions"><div className="wallet">◉ <b>400</b></div><button className="sound" onClick={()=>{}}>♪</button></div>
-    </header>
+    <header className="topbar"><button className="brand" onClick={home}><span className="brand-mark">◆</span><b>TRIPLIX</b></button><div className="top-actions"><div className="wallet">◉ <b>400</b></div><button className="sound">♪</button></div></header>
 
-    {screen==='home'&&<section className="home">
-      <div className="hero-world"><div className="hero-vignette"/><div className="hero-copy"><span className="kicker">TRIPLIX WORLDS</span><h1>Bir Taştan<br/><em>Daha Fazlası!</em></h1><p>Farklı dünyaları keşfet. Taşları seç, üçlüleri patlat, combo'yu büyüt.</p><div className="home-buttons"><button className="primary" onClick={()=>nav('worlds')}>DÜNYANI SEÇ <b>→</b></button><button className="ghost" onClick={()=>start(1,world)}>HEMEN OYNA</button></div></div><div className="showcase-stones"><div className="show-stone ss1"><GameIcon icon={theme.icons[0]}/></div><div className="show-stone ss2"><GameIcon icon={theme.icons[1]}/></div><div className="show-stone ss3"><GameIcon icon={theme.icons[2]}/></div><div className="show-stone ss4"><GameIcon icon={theme.icons[3]}/></div></div></div>
-      <div className="quick-row"><div><b>9</b><small>DÜNYA</small></div><div><b>60</b><small>BÖLÜM</small></div><div><b>∞</b><small>COMBO</small></div></div>
-      <div className="home-links"><button className="feature-link" onClick={()=>nav('worlds')}><span>◇</span><div><b>Oyun Dünyaları</b><small>Her dünyada farklı taş seti</small></div><strong>›</strong></button><button className="feature-link" onClick={()=>nav('levels')}><span>◎</span><div><b>Bölüm Haritası</b><small>{level}/60 ilerleme</small></div><strong>›</strong></button></div>
-    </section>}
+    {screen==='home'&&<section className="home"><div className="hero-world"><div className="hero-vignette"/><div className="hero-copy"><span className="kicker">TRIPLIX WORLDS</span><h1>Bir Taştan<br/><em>Daha Fazlası!</em></h1><p>Farklı dünyaları keşfet. Taşları seç, üçlüleri patlat, combo'yu büyüt.</p><div className="home-buttons"><button className="primary" onClick={()=>nav('worlds')}>DÜNYANI SEÇ <b>→</b></button><button className="ghost" onClick={()=>start(1,world)}>HEMEN OYNA</button></div></div><div className="showcase-stones"><div className="show-stone ss1"><GameIcon icon={theme.icons[0]}/></div><div className="show-stone ss2"><GameIcon icon={theme.icons[1]}/></div><div className="show-stone ss3"><GameIcon icon={theme.icons[2]}/></div><div className="show-stone ss4"><GameIcon icon={theme.icons[3]}/></div></div></div><div className="quick-row"><div><b>9</b><small>DÜNYA</small></div><div><b>60</b><small>BÖLÜM</small></div><div><b>∞</b><small>COMBO</small></div></div><div className="home-links"><button className="feature-link" onClick={()=>nav('worlds')}><span>◇</span><div><b>Oyun Dünyaları</b><small>Her dünyada farklı taş seti</small></div><strong>›</strong></button><button className="feature-link" onClick={()=>nav('levels')}><span>◎</span><div><b>Bölüm Haritası</b><small>{level}/60 ilerleme</small></div><strong>›</strong></button></div></section>}
 
     {screen==='worlds'&&<section className="subscreen compact-worlds"><div className="page-head"><button className="back" onClick={()=>nav('home')}>‹</button><div><span>DÜNYANI SEÇ</span><h2>Macera Haritası</h2></div></div><p className="page-copy">Bir dünya seç ve kendi taş koleksiyonunu keşfet.</p><div className="world-grid">{(Object.keys(worlds) as World[]).map(w=><button key={w} className={`world-card ${w===world?'active':''}`} onClick={()=>{setWorld(w);nav('levels')}}><div className={`world-preview ${worlds[w].bg}`}><GameIcon icon={worlds[w].icons[0]}/><span className="mini-icons">{worlds[w].icons.slice(1,4).map((ic,i)=><GameIcon key={i} icon={ic}/>)}</span></div><div className="world-card-copy"><b>{worlds[w].title}</b><small>{worlds[w].tagline}</small></div><strong>{w===world?'✓':'›'}</strong></button>)}</div></section>}
 
     {screen==='levels'&&<section className="subscreen"><div className="page-head"><button className="back" onClick={()=>nav('worlds')}>‹</button><div><span>{theme.title.toUpperCase()}</span><h2>Bölüm Haritası</h2></div></div><div className="map-banner"><div className={`map-art ${theme.bg}`}><GameIcon icon={theme.icons[0]}/></div><div><b>{theme.title}</b><small>Seviye {level} / 60</small><div className="bar"><i style={{width:`${Math.min(100,level/60*100)}%`}}/></div></div></div><div className="level-path">{Array.from({length:60},(_,i)=>i+1).map(n=>{const locked=n>level+1;return <button disabled={locked} key={n} className={`level-node ${n===level?'current':''} ${locked?'locked':''}`} onClick={()=>start(n,world)}><b>{locked?'·':n}</b><span>{locked?'':'★'.repeat(n<level?3:1)+'☆'.repeat(n<level?0:2)}</span></button>})}</div></section>}
 
-    {screen==='game'&&<section className="game"><div className="game-head"><button className="back" onClick={()=>nav('levels')}>‹</button><div className="level-sign"><span>{theme.title}</span><b>BÖLÜM {level}</b></div><div className="coins">◉ 400</div></div><div className="goal-strip"><div><small>HAMLE</small><b>{moves}</b></div><div><small>COMBO</small><b className="gold">x{combo}</b></div><div><small>HEDEF</small><b>{triples}/{goal}</b></div><div><small>SKOR</small><b>{score}</b></div></div><div className={`game-scene ${theme.bg}`}><div className="scene-lights"/><div className="game-board">{board.map((stone,i)=><button disabled={status!=='playing'} key={stone.id} className={`stone ${selectedId===stone.id?'selected':''}`} style={{background:theme.colors[stone.kind]}} onClick={()=>selectStone(stone)}><GameIcon icon={theme.icons[stone.kind]}/></button>)}</div></div><div className="tray-wrap"><div className="tray-head"><b>SEÇİLEN TAŞLAR</b><span>{tray.length}/7</span></div><div className="tray">{Array.from({length:7},(_,i)=>{const s=tray[i];return s?<div className="tray-stone" key={i} style={{background:theme.colors[s.kind]}}><GameIcon icon={theme.icons[s.kind]}/></div>:<div className="tray-slot" key={i}/>} )}</div></div><div className={`message ${status}`}>{message}</div>{status!=='playing'&&<div className="result"><div className="result-burst">{status==='won'?'★':'×'}</div><b>{status==='won'?'BÖLÜM TAMAMLANDI!':'TEPSİ DOLDU!'}</b><small>{status==='won'?'${goal} üçlü tamamlandı':'Daha iyi bir sıra kurup tekrar dene'}</small><div><button className="primary" onClick={()=>start(status==='won'?level+1:level,world)}>{status==='won'?'SONRAKİ BÖLÜM':'TEKRAR OYNA'} <b>→</b></button><button className="ghost" onClick={()=>nav('levels')}>BÖLÜMLER</button></div></div>}<div className="tools"><button disabled={status!=='playing'} onClick={shuffle}>↝<span>Karıştır</span></button><button disabled={status!=='playing'} onClick={hint}>◇<span>İpucu</span></button><button onClick={()=>start(level,world)}>↻<span>Sıfırla</span></button></div></section>}
+    {screen==='game'&&<section className="game"><div className="game-head"><button className="back" onClick={()=>nav('levels')}>‹</button><div className="level-sign"><span>{theme.title}</span><b>BÖLÜM {level}</b></div><div className="coins">◉ 400</div></div><div className="goal-strip"><div><small>HAMLE</small><b>{moves}</b></div><div><small>COMBO</small><b className="gold">x{combo}</b></div><div><small>KALAN</small><b>{board.length}/49</b></div><div><small>SKOR</small><b>{score}</b></div></div><div className={`game-scene ${theme.bg}`}><div className="scene-lights"/><div className="game-board">{board.map(stone=><button disabled={status!=='playing'} key={stone.id} className={`stone ${selectedId===stone.id?'selected':''}`} style={{background:theme.colors[stone.kind]}} onClick={()=>selectStone(stone)}><GameIcon icon={theme.icons[stone.kind]}/></button>)}</div></div><div className="tray-wrap"><div className="tray-head"><b>SEÇİLEN TAŞLAR</b><span>{tray.length}/7</span></div><div className="tray">{Array.from({length:7},(_,i)=>{const s=tray[i];return s?<div className="tray-stone" key={i} style={{background:theme.colors[s.kind]}}><GameIcon icon={theme.icons[s.kind]}/></div>:<div className="tray-slot" key={i}/>} )}</div></div><div className={`message ${status}`}>{message}</div>{status!=='playing'&&<div className="result"><div className="result-burst">{status==='won'?'★':'×'}</div><b>{status==='won'?'BÖLÜM TAMAMLANDI!':'TEPSİ DOLDU!'}</b><small>{status==='won'?'Tahtadaki tüm taşları temizledin.':'Daha iyi bir sıra kurup tekrar dene.'}</small><div><button className="primary" onClick={()=>start(status==='won'?level+1:level,world)}>{status==='won'?'SONRAKİ BÖLÜM':'TEKRAR OYNA'} <b>→</b></button><button className="ghost" onClick={()=>nav('levels')}>BÖLÜMLER</button></div></div>}<div className="tools"><button disabled={status!=='playing'} onClick={shuffle}>↝<span>Karıştır</span></button><button disabled={status!=='playing'} onClick={hint}>◇<span>İpucu</span></button><button onClick={()=>start(level,world)}>↻<span>Sıfırla</span></button></div></section>}
   </main>
 }
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>)

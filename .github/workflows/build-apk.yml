@@ -8,101 +8,27 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.7.1'
-      - name: Normalize TRIPLIX source
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
 
-          for name in ('TriplixV2.kt', 'TriplixV3.kt'):
-              p = Path('app/src/main/java/com/triplix/app') / name
-              if p.exists():
-                  p.unlink()
-
-          p = Path('app/src/main/java/com/triplix/app/TriplixV4.kt')
-          s = p.read_text()
-          s = s.replace('import androidx.compose.runtime.rememberSaveable', 'import androidx.compose.runtime.saveable.rememberSaveable')
-          fixes = {
-              'Column(Modifier.fillMaxSize(), Alignment.CenterHorizontally, Arrangement.Center)': 'Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center)',
-              'Column(Modifier.fillMaxSize().padding(14.dp), Alignment.CenterHorizontally, Arrangement.Center)': 'Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center)',
-              'Row(Modifier.padding(14.dp), Alignment.CenterVertically)': 'Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically)',
-              'Row(Modifier.fillMaxWidth(), Alignment.CenterVertically)': 'Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically)',
-              'Row(Modifier.fillMaxWidth().height(52.dp), Alignment.CenterVertically)': 'Row(Modifier.fillMaxWidth().height(52.dp), verticalAlignment = Alignment.CenterVertically)',
-          }
-          for old, new in fixes.items():
-              s = s.replace(old, new)
-          s = s.replace('@Composable private fun Mini4(', '@Composable private fun RowScope.Mini4(')
-          s = s.replace('AnimatedVisibility(burst){Text("💥✨",fontSize=60.sp)}', 'if(burst){Text("💥✨",Modifier.align(Alignment.Center),fontSize=60.sp)}')
-          p.write_text(s)
-
-          v6 = Path('app/src/main/java/com/triplix/app/TriplixV6.kt')
-          if v6.exists():
-              s = v6.read_text()
-              nl = chr(10)
-              s = s.replace('import androidx.compose.foundation.background', 'import androidx.compose.animation.core.animateFloatAsState' + nl + 'import androidx.compose.animation.core.spring' + nl + 'import androidx.compose.foundation.background')
-              s = s.replace('import androidx.compose.ui.draw.clip', 'import androidx.compose.ui.draw.clip' + nl + 'import androidx.compose.ui.draw.scale')
-              lines = s.splitlines()
-              replacement = [
-                  '@Composable',
-                  'private fun GemV6(type: Int, selected: Boolean, modifier: Modifier, click: () -> Unit) {',
-                  '    val color = GemColors[type]',
-                  '    val pop by animateFloatAsState(if (selected) 1.09f else 1f, spring(dampingRatio = .48f, stiffness = 520f), label = "gemPop")',
-                  '    val glow by animateFloatAsState(if (selected) 1f else 0f, spring(dampingRatio = .7f, stiffness = 380f), label = "gemGlow")',
-                  '    Box(',
-                  '        modifier.scale(pop).clip(RoundedCornerShape(13.dp))',
-                  '            .background(color.copy(if (selected) .31f else .18f))',
-                  '            .border(if (selected) 2.dp else 1.dp, if (selected) Color.White else color.copy(.43f), RoundedCornerShape(13.dp))',
-                  '            .clickable(onClick = click),',
-                  '        contentAlignment = Alignment.Center',
-                  '    ) {',
-                  '        if (glow > .01f) {',
-                  '            Box(Modifier.matchParentSize().border(3.dp, Color.White.copy(.26f * glow), RoundedCornerShape(13.dp)))',
-                  '            Text("✦", color = Color.White.copy(.9f * glow), fontSize = 14.sp, modifier = Modifier.align(Alignment.TopEnd).padding(4.dp))',
-                  '            Text("✦", color = Color.White.copy(.65f * glow), fontSize = 10.sp, modifier = Modifier.align(Alignment.BottomStart).padding(4.dp))',
-                  '        }',
-                  '        Text(Gems[type], color = Color.White, fontSize = if (selected) 26.sp else 24.sp, fontWeight = FontWeight.Black)',
-                  '    }',
-                  '}'
-              ]
-              start = next((i for i,line in enumerate(lines) if line.startswith('@Composable private fun GemV6')), None)
-              if start is None:
-                  raise SystemExit('V6 GemV6 function not found')
-              end = start + 1
-              while end < len(lines) and not (lines[end].startswith('@Composable private fun ToolV6')):
-                  end += 1
-              if end == len(lines):
-                  raise SystemExit('V6 ToolV6 marker not found')
-              lines[start:end] = replacement
-              v6.write_text(nl.join(lines) + nl)
-
-          v7 = Path('app/src/main/java/com/triplix/app/TriplixV7.kt')
-          if v7.exists():
-              s = v7.read_text()
-              s = s.replace('private enum class Page { HOME, LEVELS, GAME }', 'private enum class PageV7 { HOME, LEVELS, GAME }')
-              s = s.replace('Page.HOME', 'PageV7.HOME').replace('Page.LEVELS', 'PageV7.LEVELS').replace('Page.GAME', 'PageV7.GAME')
-              s = s.replace('mutableStateOf(Page.HOME)', 'mutableStateOf(PageV7.HOME)')
-              s = s.replace('import androidx.compose.animation.AnimatedVisibility\n', '')
-              s = s.replace('import androidx.compose.animation.fadeIn\n', '').replace('import androidx.compose.animation.fadeOut\n', '')
-              old = '''            AnimatedVisibility(visible = burstToken > 0, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.Center)) { Text(burstText, color = Gold, fontSize = 27.sp, fontWeight = FontWeight.Black, modifier = Modifier.background(Color.Black.copy(.38f), RoundedCornerShape(20.dp)).padding(horizontal = 18.dp, vertical = 10.dp)) }'''
-              new = '''            if (burstToken > 0) { Text(burstText, color = Gold, fontSize = 27.sp, fontWeight = FontWeight.Black, modifier = Modifier.align(Alignment.Center).background(Color.Black.copy(.38f), RoundedCornerShape(20.dp)).padding(horizontal = 18.dp, vertical = 10.dp)) }'''
-              s = s.replace(old, new)
-              v7.write_text(s)
-          PY
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: triplix-debug-apk
+          name: triplix-clean-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk

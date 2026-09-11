@@ -41,24 +41,32 @@ const worlds = {
 type World=keyof typeof worlds
 type Screen='home'|'worlds'|'levels'|'game'
 type Status='playing'|'won'|'lost'
-type Stone={id:number;kind:number}
-type LevelConfig={stones:number;kinds:number;moves:number}
+type Stone={id:number;kind:number;x:number;y:number;layer:number}
+type LevelConfig={stones:number;kinds:number;moves:number;layers:number}
 
 function getLevelConfig(level:number):LevelConfig{
   const safe=Math.max(1,Math.min(60,level))
   const stones=27+Math.floor((safe-1)/5)*3
   const kinds=Math.min(6,3+Math.floor((safe-1)/15))
-  return {stones,kinds,moves:stones+5}
+  const layers=safe<11?1:safe<26?2:safe<46?3:4
+  return {stones,kinds,moves:stones+5,layers}
 }
 
 function makeBoard(seed:number,world:World,level:number):Stone[]{
   const config=getLevelConfig(level)
   const stones:Array<Stone>=[]
-  const random=()=>{const x=Math.sin(seed*999+stones.length*37+config.stones*13)*10000;return x-Math.floor(x)}
+  const cells=48
+  const perLayer=Math.ceil(config.stones/config.layers)
+  const random=()=>{const x=Math.sin(seed*999+stones.length*37+config.stones*13+level*17)*10000;return x-Math.floor(x)}
   for(let i=0;i<config.stones;i++){
+    const layer=Math.min(config.layers-1,Math.floor(i/perLayer))
+    const index=i%perLayer
+    const cell=(index*11+layer*17+seed*3)%cells
+    const x=cell%8
+    const y=Math.floor(cell/8)
     const group=Math.floor(i/3)
     const kind=(seed*3+group*2)%config.kinds
-    stones.push({id:seed*1000+i,kind})
+    stones.push({id:seed*1000+i,kind,x,y,layer})
   }
   for(let i=stones.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[stones[i],stones[j]]=[stones[j],stones[i]]}
   return stones
@@ -81,8 +89,8 @@ function App(){
   const [selectedId,setSelectedId]=useState<number|null>(null)
   const theme=worlds[world]
   const config=getLevelConfig(level)
-  const boardCols=Math.ceil(Math.sqrt(board.length))
   const counts=useMemo(()=>tray.reduce<Record<number,number>>((a,s)=>{a[s.kind]=(a[s.kind]??0)+1;return a},{}),[tray])
+  const isBlocked=(stone:Stone)=>board.some(other=>other.id!==stone.id&&other.layer>stone.layer&&other.x===stone.x&&other.y===stone.y)
 
   useEffect(()=>{
     const onPop=()=>{const s=window.history.state?.triplixScreen as Screen|undefined;setScreen(s??'home')}
@@ -117,15 +125,15 @@ function App(){
     const safe=Math.max(1,Math.min(60,nextLevel))
     const nextConfig=getLevelConfig(safe)
     setLevel(safe);setWorld(nextWorld);setScore(0);setCombo(0);setMoves(nextConfig.moves);setTriples(0);setTray([])
-    setBoard(makeBoard(safe,nextWorld,safe));setStatus('playing');setSelectedId(null);setMessage(`${nextConfig.stones} taş • ${nextConfig.kinds} farklı simge • üçlüleri patlat!`);nav('game')
+    setBoard(makeBoard(safe,nextWorld,safe));setStatus('playing');setSelectedId(null);setMessage(`${nextConfig.stones} taş • ${nextConfig.kinds} farklı simge • ${nextConfig.layers} katman • üçlüleri patlat!`);nav('game')
   }
   function selectStone(stone:Stone){
-    if(status!=='playing'||moves<=0||tray.length>=7||selectedId!==null)return
+    if(status!=='playing'||moves<=0||tray.length>=7||selectedId!==null||isBlocked(stone))return
     setSelectedId(stone.id)
     window.setTimeout(()=>{setBoard(cur=>cur.filter(x=>x.id!==stone.id));setTray(cur=>[...cur,stone]);setMoves(v=>Math.max(0,v-1));setSelectedId(null);setMessage('Taş parıltı iziyle tepsiye iniyor…')},180)
   }
   function shuffle(){if(status==='playing'){setBoard(cur=>[...cur].sort(()=>Math.random()-.5));setMessage('Tahta karıştırıldı.')}}
-  function hint(){if(status==='playing'){const s=board.find(x=>counts[x.kind]>0)||board[0];if(s)setMessage('İpucu: aynı simgeden üç tane kovala.')}}
+  function hint(){if(status==='playing'){const s=board.find(x=>!isBlocked(x)&&counts[x.kind]>0)||board.find(x=>!isBlocked(x));if(s)setMessage(isBlocked(s)?'Üstteki taşları temizle.':'İpucu: aynı simgeden üç tane kovala.')}}
 
   return <main className={`app-shell world-${theme.bg}`}>
     <div className="atmo atmo-one"/><div className="atmo atmo-two"/>
@@ -135,9 +143,9 @@ function App(){
 
     {screen==='worlds'&&<section className="subscreen compact-worlds"><div className="page-head"><button className="back" onClick={()=>nav('home')}>‹</button><div><span>DÜNYANI SEÇ</span><h2>Macera Haritası</h2></div></div><p className="page-copy">Bir dünya seç ve kendi taş koleksiyonunu keşfet.</p><div className="world-grid">{(Object.keys(worlds) as World[]).map(w=><button key={w} className={`world-card ${w===world?'active':''}`} onClick={()=>{setWorld(w);nav('levels')}}><div className={`world-preview ${worlds[w].bg}`}><GameIcon icon={worlds[w].icons[0]}/><span className="mini-icons">{worlds[w].icons.slice(1,4).map((ic,i)=><GameIcon key={i} icon={ic}/>)}</span></div><div className="world-card-copy"><b>{worlds[w].title}</b><small>{worlds[w].tagline}</small></div><strong>{w===world?'✓':'›'}</strong></button>)}</div></section>}
 
-    {screen==='levels'&&<section className="subscreen"><div className="page-head"><button className="back" onClick={()=>nav('worlds')}>‹</button><div><span>{theme.title.toUpperCase()}</span><h2>Bölüm Haritası</h2></div></div><div className="map-banner"><div className={`map-art ${theme.bg}`}><GameIcon icon={theme.icons[0]}/></div><div><b>{theme.title}</b><small>Seviye {level} / 60 • {getLevelConfig(level).stones} taş</small><div className="bar"><i style={{width:`${Math.min(100,level/60*100)}%`}}/></div></div></div><div className="level-path">{Array.from({length:60},(_,i)=>i+1).map(n=>{const locked=n>level+1;return <button disabled={locked} key={n} className={`level-node ${n===level?'current':''} ${locked?'locked':''}`} onClick={()=>start(n,world)}><b>{locked?'·':n}</b><span>{locked?'':'★'.repeat(n<level?3:1)+'☆'.repeat(n<level?0:2)}</span></button>})}</div></section>}
+    {screen==='levels'&&<section className="subscreen"><div className="page-head"><button className="back" onClick={()=>nav('worlds')}>‹</button><div><span>{theme.title.toUpperCase()}</span><h2>Bölüm Haritası</h2></div></div><div className="map-banner"><div className={`map-art ${theme.bg}`}><GameIcon icon={theme.icons[0]}/></div><div><b>{theme.title}</b><small>Seviye {level} / 60 • {getLevelConfig(level).stones} taş • {getLevelConfig(level).layers} katman</small><div className="bar"><i style={{width:`${Math.min(100,level/60*100)}%`}}/></div></div></div><div className="level-path">{Array.from({length:60},(_,i)=>i+1).map(n=>{const locked=n>level+1;return <button disabled={locked} key={n} className={`level-node ${n===level?'current':''} ${locked?'locked':''}`} onClick={()=>start(n,world)}><b>{locked?'·':n}</b><span>{locked?'':'★'.repeat(n<level?3:1)+'☆'.repeat(n<level?0:2)}</span></button>})}</div></section>}
 
-    {screen==='game'&&<section className="game"><div className="game-head"><button className="back" onClick={()=>nav('levels')}>‹</button><div className="level-sign"><span>{theme.title}</span><b>BÖLÜM {level} • {config.stones} TAŞ</b></div><div className="coins">◉ 400</div></div><div className="goal-strip"><div><small>HAMLE</small><b>{moves}</b></div><div><small>COMBO</small><b className="gold">x{combo}</b></div><div><small>KALAN</small><b>{board.length}/{config.stones}</b></div><div><small>SKOR</small><b>{score}</b></div></div><div className={`game-scene ${theme.bg}`}><div className="scene-lights"/><div className="game-board" style={{'--board-cols':boardCols} as React.CSSProperties}>{board.map(stone=><button disabled={status!=='playing'} key={stone.id} className={`stone ${selectedId===stone.id?'selected':''}`} style={{background:theme.colors[stone.kind]}} onClick={()=>selectStone(stone)}><GameIcon icon={theme.icons[stone.kind]}/></button>)}</div></div><div className="tray-wrap"><div className="tray-head"><b>SEÇİLEN TAŞLAR</b><span>{tray.length}/7</span></div><div className="tray">{Array.from({length:7},(_,i)=>{const s=tray[i];return s?<div className="tray-stone" key={i} style={{background:theme.colors[s.kind]}}><GameIcon icon={theme.icons[s.kind]}/></div>:<div className="tray-slot" key={i}/>} )}</div></div><div className={`message ${status}`}>{message}</div>{status!=='playing'&&<div className="result"><div className="result-burst">{status==='won'?'★':'×'}</div><b>{status==='won'?'BÖLÜM TAMAMLANDI!':'TEPSİ DOLDU!'}</b><small>{status==='won'?'Tahtadaki tüm taşları temizledin.':'Daha iyi bir sıra kurup tekrar dene.'}</small><div><button className="primary" onClick={()=>start(status==='won'?level+1:level,world)}>{status==='won'?'SONRAKİ BÖLÜM':'TEKRAR OYNA'} <b>→</b></button><button className="ghost" onClick={()=>nav('levels')}>BÖLÜMLER</button></div></div>}<div className="tools"><button disabled={status!=='playing'} onClick={shuffle}>↝<span>Karıştır</span></button><button disabled={status!=='playing'} onClick={hint}>◇<span>İpucu</span></button><button onClick={()=>start(level,world)}>↻<span>Sıfırla</span></button></div></section>}
+    {screen==='game'&&<section className="game"><div className="game-head"><button className="back" onClick={()=>nav('levels')}>‹</button><div className="level-sign"><span>{theme.title}</span><b>BÖLÜM {level} • {config.stones} TAŞ • {config.layers} KAT</b></div><div className="coins">◉ 400</div></div><div className="goal-strip"><div><small>HAMLE</small><b>{moves}</b></div><div><small>COMBO</small><b className="gold">x{combo}</b></div><div><small>KALAN</small><b>{board.length}/{config.stones}</b></div><div><small>SKOR</small><b>{score}</b></div></div><div className={`game-scene ${theme.bg}`}><div className="scene-lights"/><div className="layer-badge">{config.layers}D KATMAN</div><div className="game-board" style={{'--board-cols':8} as React.CSSProperties}>{board.map(stone=>{const blocked=isBlocked(stone);return <button disabled={status!=='playing'||blocked} key={stone.id} className={`stone ${selectedId===stone.id?'selected':''} ${blocked?'blocked':''}`} style={{gridColumn:stone.x+1,gridRow:stone.y+1,zIndex:stone.layer+1,'--depth':stone.layer} as React.CSSProperties} onClick={()=>selectStone(stone)}><GameIcon icon={theme.icons[stone.kind]}/>{blocked&&<span className="stone-cover"/>}</button>})}</div></div><div className="tray-wrap"><div className="tray-head"><b>SEÇİLEN TAŞLAR</b><span>{tray.length}/7</span></div><div className="tray">{Array.from({length:7},(_,i)=>{const s=tray[i];return s?<div className="tray-stone" key={i} style={{background:theme.colors[s.kind]}}><GameIcon icon={theme.icons[s.kind]}/></div>:<div className="tray-slot" key={i}/>} )}</div></div><div className={`message ${status}`}>{message}</div>{status!=='playing'&&<div className="result"><div className="result-burst">{status==='won'?'★':'×'}</div><b>{status==='won'?'BÖLÜM TAMAMLANDI!':'TEPSİ DOLDU!'}</b><small>{status==='won'?'Tahtadaki tüm taşları temizledin.':'Daha iyi bir sıra kurup tekrar dene.'}</small><div><button className="primary" onClick={()=>start(status==='won'?level+1:level,world)}>{status==='won'?'SONRAKİ BÖLÜM':'TEKRAR OYNA'} <b>→</b></button><button className="ghost" onClick={()=>nav('levels')}>BÖLÜMLER</button></div></div>}<div className="tools"><button disabled={status!=='playing'} onClick={shuffle}>↝<span>Karıştır</span></button><button disabled={status!=='playing'} onClick={hint}>◇<span>İpucu</span></button><button onClick={()=>start(level,world)}>↻<span>Sıfırla</span></button></div></section>}
   </main>
 }
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>)

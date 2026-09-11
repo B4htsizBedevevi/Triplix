@@ -17,6 +17,7 @@ import minerals from '@iconify-icons/game-icons/minerals'
 import cat from '@iconify-icons/game-icons/cat'
 import bottle from '@iconify-icons/game-icons/health-potion'
 import './styles.css'
+import './layered.css'
 
 const pack = {
   fruit:[strawberry,banana,grapes,lemon,watermelon,bottle],

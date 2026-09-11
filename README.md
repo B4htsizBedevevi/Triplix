@@ -1,14 +1,16 @@
-# TRIPLIX
+# TRIPLIX 🧩
 
-A native Android triple-match puzzle game.
+Native Android triple-match puzzle game.
 
-## Vision
-Tap accessible tiles, place them in the tray, match three identical tiles, clear the board and progress through increasingly challenging levels.
+## Current build
+- Kotlin + Jetpack Compose
+- Animated tile selection
+- Scale/rotation spring effects
+- Match pop transitions
+- Particle burst effects
+- Combo, score, coins and lives
+- 7-slot tray
+- GitHub Actions APK build
 
-## Tech
-- Kotlin
-- Jetpack Compose
-- Material 3
-- Android Gradle Plugin
-
-The project is intentionally separate from Yurdunu Bil.
+## Direction
+TRIPLIX is an independent casual mobile game. The visual identity and gameplay will be developed as an original experience inspired by the broad match-puzzle genre, not a copy of any single game.

@@ -2,194 +2,121 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
 
-const themes = {
-  Meyve: { emoji: '🍓', subtitle: 'Renkli meyveler, hızlı üçlüler', symbols: ['🍎','🍋','🍇','🍊','🥝','🍉'], colors: ['#ff587b','#ffc857','#73d881','#59c4ff','#a88bff','#ff9160'] },
-  Klasik: { emoji: '◆', subtitle: 'Temiz, sakin, zamansız', symbols: ['◆','●','★','■','▲','✦'], colors: ['#ee6577','#57a8f4','#9b7cf2','#53c594','#f3bb58','#e47aa9'] },
-  Uzay: { emoji: '🚀', subtitle: 'Kristaller ve kozmik güçler', symbols: ['💎','🌌','🪐','⭐','☄️','🌙'], colors: ['#54a9ff','#7c65ef','#57d8b2','#ffc95b','#ff6e88','#a98bff'] },
-  Arcade: { emoji: '⚡', subtitle: 'Hızlı, neon ve tempolu', symbols: ['⚡','🎮','💠','🔶','🔥','💜'], colors: ['#52e8ff','#ff5ee6','#7d7bff','#ffc24d','#ff6767','#66ef9a'] },
+const worlds = {
+  Meyve: { emoji:'🍓', title:'Meyve Bahçesi', tagline:'Tatlı eşleşmeler, büyük combo!', symbols:['🍓','🍌','🍇','🍎','🍊','🍉','🍒','🍍'], colors:['#ff6680','#ffc95d','#76d987','#67bfff','#ff8d61','#87c9ff','#ef5c78','#f3b84f'] },
+  Kristal: { emoji:'💎', title:'Kristal Dünyası', tagline:'Parla, eşleş, patla!', symbols:['💎','🔷','🟢','🟣','🔴','🟡','🔹','💠'], colors:['#54b8ff','#4b7cff','#62dfaa','#a66bff','#ff6286','#ffc84f','#45d3ff','#cb72ff'] },
+  Sihir: { emoji:'🪄', title:'Sihirli Objeler', tagline:'Küçük detaylar, büyük maceralar!', symbols:['🧙','🧪','📕','🗝️','🔮','🪄','🗺️','✨'], colors:['#9d75ff','#65b8ff','#dd70a9','#e6bd5e','#6f8df5','#ca78ff','#d69968','#60ddc0'] },
+  Kozmik: { emoji:'🪐', title:'Kozmik Serüven', tagline:'Uzayın en parlak üçlüleri', symbols:['🪐','⭐','🚀','🌌','🌙','☄️','🌍','💫'], colors:['#4ca8ff','#ffd55d','#f17b6c','#7e75ff','#65d0ef','#ff7db0','#6ad79b','#b18cff'] },
+  Dostlar: { emoji:'🐱', title:'Sevimli Dostlar', tagline:'Tatlı karakterler, renkli eşleşmeler', symbols:['🐱','🐶','🐼','🐰','🐻','🐸','🐧','🐥'], colors:['#f59aa8','#c8a579','#a7b9cd','#f6b8cb','#b98765','#73c9a1','#8fb3d9','#f4d06f'] },
+  Antik: { emoji:'☀️', title:'Antik Semboller', tagline:'Zamanı aşan üçlüler', symbols:['☀️','👁️','△','🌀','🌿','🔱','◈','☼'], colors:['#d4a84d','#6aa9e8','#d9b86e','#9b7a4e','#59a876','#d8894f','#8f8dca','#d1b05d'] },
+  Dogal: { emoji:'🍃', title:'Doğa Elementleri', tagline:'Doğanın gücü seninle', symbols:['🍃','💧','🔥','🌪️','🪨','🌸','🌱','💦'], colors:['#6ad983','#64baf5','#ff7164','#7a9df1','#9b8067','#ef9cc0','#76bb68','#5fc7e3'] },
+  Mevsim: { emoji:'❄️', title:'Mevsimler', tagline:'Her mevsim farklı bir güzellik', symbols:['❄️','🌸','☀️','🍁','🍂','🌧️','🌻','⛄'], colors:['#78baff','#ff9fc1','#ffc54e','#e58b66','#c97857','#699ce5','#f2bd53','#c7e7ff'] },
+  Koleksiyon: { emoji:'👑', title:'Özel Koleksiyon', tagline:'Sadece TRIPLIX’e özel!', symbols:['👑','❤️','💎','🍀','⚡','💜','♾️','⭐'], colors:['#e9be54','#ef6f85','#6cbfff','#6bd397','#ffc850','#aa78f0','#7c8eff','#f1cf58'] },
 } as const
+type World = keyof typeof worlds
+type Screen='home'|'worlds'|'levels'|'game'
+type Status='playing'|'won'|'lost'
+type Stone={id:number;kind:number}
 
-type Mode = keyof typeof themes
-type Screen = 'home' | 'modes' | 'levels' | 'game'
-type GameStatus = 'playing' | 'won' | 'lost'
-type Stone = { id: number; kind: number }
-
-function makeBoard(seed = 1, mode: Mode = 'Meyve'): Stone[] {
-  const offset = Object.keys(themes).indexOf(mode)
-  return Array.from({ length: 49 }, (_, i) => ({
-    id: seed * 1000 + i,
-    kind: (i * 7 + seed * 3 + Math.floor(i / 7) + offset) % themes[mode].symbols.length,
-  }))
+function makeBoard(seed:number, world:World){
+  const n=worlds[world].symbols.length
+  return Array.from({length:49},(_,i)=>({id:seed*1000+i,kind:(seed*13+i*5+Math.floor(i/7)*3)%n}))
 }
 
-function App() {
-  const [screen, setScreen] = useState<Screen>('home')
-  const [mode, setMode] = useState<Mode>('Meyve')
-  const [level, setLevel] = useState(1)
-  const [score, setScore] = useState(0)
-  const [combo, setCombo] = useState(0)
-  const [moves, setMoves] = useState(30)
-  const [triples, setTriples] = useState(0)
-  const [tray, setTray] = useState<Stone[]>([])
-  const [board, setBoard] = useState<Stone[]>(makeBoard(1))
-  const [message, setMessage] = useState('Aynı türden 3 taş seç ve üçle!')
-  const [sound, setSound] = useState(true)
-  const [status, setStatus] = useState<GameStatus>('playing')
-  const [animatingId, setAnimatingId] = useState<number | null>(null)
-  const theme = themes[mode]
-  const goal = 5 + Math.floor(level / 3)
+function App(){
+  const [screen,setScreen]=useState<Screen>('home')
+  const [world,setWorld]=useState<World>('Meyve')
+  const [level,setLevel]=useState(1)
+  const [score,setScore]=useState(0)
+  const [combo,setCombo]=useState(0)
+  const [moves,setMoves]=useState(30)
+  const [triples,setTriples]=useState(0)
+  const [tray,setTray]=useState<Stone[]>([])
+  const [board,setBoard]=useState<Stone[]>(makeBoard(1,'Meyve'))
+  const [status,setStatus]=useState<Status>('playing')
+  const [message,setMessage]=useState('3 aynı taşı seç • üçüncüde patlat!')
+  const [sound,setSound]=useState(true)
+  const [selectedId,setSelectedId]=useState<number|null>(null)
+  const theme=worlds[world]
+  const goal=5+Math.floor(level/5)
 
-  const grouped = useMemo(() => tray.reduce<Record<number, number>>((acc, stone) => {
-    acc[stone.kind] = (acc[stone.kind] ?? 0) + 1
-    return acc
-  }, {}), [tray])
+  const counts=useMemo(()=>tray.reduce<Record<number,number>>((a,s)=>{a[s.kind]=(a[s.kind]??0)+1;return a},{}),[tray])
 
-  useEffect(() => {
-    if (status !== 'playing' || !tray.length) return
-    const tripleKind = Object.entries(grouped).find(([, count]) => count >= 3)?.[0]
-    if (tripleKind === undefined) {
-      if (tray.length >= 7) {
-        setStatus('lost')
-        setMessage('Tepsi doldu! Bu tur kaçtı 😵')
-      }
+  useEffect(()=>{
+    if(status!=='playing')return
+    const entry=Object.entries(counts).find(([,c])=>c>=3)
+    if(!entry){
+      if(tray.length>=7){setStatus('lost');setMessage('Tepsi doldu! Bu tur kaçtı.')}
       return
     }
-    const kind = Number(tripleKind)
-    const timer = window.setTimeout(() => {
-      setTray(current => {
-        let removed = 0
-        return current.filter(stone => {
-          if (stone.kind === kind && removed < 3) { removed += 1; return false }
-          return true
-        })
-      })
-      setTriples(currentTriples => {
-        const next = currentTriples + 1
-        if (next >= goal) {
-          setStatus('won')
-          setMessage('BÖLÜM TAMAMLANDI! 🏆')
-        } else {
-          setMessage('ÜÇLEDİN! +100 ✨')
-        }
-        return next
-      })
-      setCombo(currentCombo => {
-        const next = currentCombo + 1
-        setScore(currentScore => currentScore + 100 + next * 25)
-        return next
-      })
-    }, 240)
-    return () => window.clearTimeout(timer)
-  }, [grouped, goal, status, tray.length])
+    const kind=Number(entry[0])
+    const t=window.setTimeout(()=>{
+      setTray(cur=>{let removed=0;return cur.filter(s=>{if(s.kind===kind&&removed<3){removed++;return false}return true})})
+      setTriples(v=>{const next=v+1;if(next>=goal){setStatus('won');setMessage('Mükemmel! Bölüm tamamlandı.')}else setMessage('ÜÇLÜ PATLADI! +100 ✨');return next})
+      setCombo(v=>v+1)
+      setScore(v=>v+125+combo*25)
+    },260)
+    return()=>window.clearTimeout(t)
+  },[counts,status,goal,combo,tray.length])
 
-  function startGame(nextLevel = level, nextMode = mode) {
-    const safeLevel = Math.min(Math.max(nextLevel, 1), 60)
-    setMode(nextMode)
-    setLevel(safeLevel)
-    setScore(0); setCombo(0); setMoves(30); setTriples(0); setTray([])
-    setBoard(makeBoard(safeLevel, nextMode))
-    setMessage('Aynı türden 3 taş seç ve üçle!')
-    setStatus('playing')
-    setScreen('game')
+  function start(nextLevel:number, nextWorld:World=world){
+    const safe=Math.max(1,Math.min(60,nextLevel))
+    setLevel(safe);setWorld(nextWorld);setScore(0);setCombo(0);setMoves(Math.max(20,32-Math.floor(safe/8)*2));setTriples(0);setTray([])
+    setBoard(makeBoard(safe,nextWorld));setStatus('playing');setSelectedId(null);setMessage('3 aynı taşı seç • üçüncüde patlat!');setScreen('game')
   }
-
-  function selectStone(stone: Stone) {
-    if (status !== 'playing' || moves <= 0 || tray.length >= 7 || animatingId !== null) return
-    setAnimatingId(stone.id)
-    window.setTimeout(() => {
-      const nextTray = [...tray, stone]
-      setBoard(current => current.filter(item => item.id !== stone.id))
-      setTray(nextTray)
-      setMoves(value => Math.max(0, value - 1))
-      setAnimatingId(null)
-      setMessage('Taş tepsiye gitti…')
-    }, 180)
+  function selectStone(stone:Stone){
+    if(status!=='playing'||moves<=0||tray.length>=7||selectedId!==null)return
+    setSelectedId(stone.id)
+    window.setTimeout(()=>{
+      setBoard(cur=>cur.filter(x=>x.id!==stone.id))
+      setTray(cur=>[...cur,stone])
+      setMoves(v=>Math.max(0,v-1))
+      setSelectedId(null)
+      setMessage('Taş tepsiye gidiyor…')
+    },170)
   }
+  function shuffle(){if(status==='playing'){setBoard(cur=>[...cur].sort(()=>Math.random()-.5));setMessage('Tahta yenilendi 🔀')}}
+  function hint(){if(status==='playing'){const s=board.find(x=>counts[x.kind]>0)||board[0];if(s)setMessage(`İpucu: ${theme.symbols[s.kind]} ile üçleme kovala!`)}} 
 
-  function shuffle() {
-    if (status !== 'playing') return
-    setBoard(current => [...current].sort(() => Math.random() - 0.5))
-    setMessage('Tahta karıştırıldı 🔀')
-  }
+  return <main className={`app-shell ${world.toLowerCase()}`}>
+    <div className="bg-noise"/><div className="scene-glow scene-one"/><div className="scene-glow scene-two"/>
+    <header className="topbar">
+      <button className="brand" onClick={()=>setScreen('home')}><span>{theme.emoji}</span><b>TRIPLIX</b></button>
+      <div className="top-actions"><div className="wallet">🪙 <b>400</b></div><button className="sound" onClick={()=>setSound(v=>!v)}>{sound?'🔊':'🔇'}</button></div>
+    </header>
 
-  function hint() {
-    if (status !== 'playing') return
-    const first = board[0]
-    setMessage(first ? `İpucu: ${theme.symbols[first.kind]} taşını seç 😉` : 'İpucu hazır!')
-  }
+    {screen==='home'&&<section className="home">
+      <div className="home-art">
+        <div className="home-art-copy"><span>TRIPLIX WORLDS</span><h1>Bir Taştan<br/><em>Daha Fazlası!</em></h1><p>Bir üçlü seç. Patlat. Combo'yu büyüt. Kendi dünyanı keşfet.</p>
+          <div className="home-buttons"><button className="primary" onClick={()=>setScreen('worlds')}>DÜNYANI SEÇ <span>→</span></button><button className="ghost" onClick={()=>start(1,'Meyve')}>HEMEN OYNA</button></div>
+        </div>
+        <div className="floating-tile t1">🍓</div><div className="floating-tile t2">💎</div><div className="floating-tile t3">🪐</div><div className="floating-tile t4">👑</div>
+      </div>
+      <div className="quick-row"><div><b>9</b><small>DÜNYA</small></div><div><b>60</b><small>BÖLÜM</small></div><div><b>3⭐</b><small>HEDEF</small></div></div>
+      <div className="home-links"><button className="feature-link" onClick={()=>setScreen('worlds')}><span>🎨</span><div><b>Oyun Dünyaları</b><small>Her temada farklı taşlar</small></div><strong>›</strong></button><button className="feature-link" onClick={()=>setScreen('levels')}><span>🗺️</span><div><b>Bölümler</b><small>{level}/60 açık</small></div><strong>›</strong></button></div>
+    </section>}
 
-  return (
-    <main className={`app-shell theme-${mode.toLowerCase()}`}>
-      <div className="ambient ambient-a" /><div className="ambient ambient-b" />
-      <header className="topbar">
-        <button className="brand" onClick={() => setScreen('home')}><span>{theme.emoji}</span> TRIPLIX</button>
-        <div className="top-actions"><button className="wallet">🪙 400</button><button className="sound" onClick={() => setSound(value => !value)}>{sound ? '🔊' : '🔇'}</button></div>
-      </header>
+    {screen==='worlds'&&<section className="subscreen">
+      <div className="page-head"><button className="back" onClick={()=>setScreen('home')}>‹</button><div><span>DÜNYANI SEÇ</span><h2>Macera Haritası</h2></div></div>
+      <p className="page-copy">Her dünyanın kendi atmosferi, taşı ve sürprizi var.</p>
+      <div className="world-grid">{(Object.keys(worlds) as World[]).map(w=><button key={w} className={`world-card ${w===world?'active':''}`} onClick={()=>{setWorld(w);setScreen('levels')}}><div className="world-preview" style={{background:worlds[w].colors[0]}}><span>{worlds[w].emoji}</span><i>{worlds[w].symbols.slice(0,4).join('')}</i></div><div><b>{worlds[w].title}</b><small>{worlds[w].tagline}</small><em>{w===world?'SEÇİLİ':'AÇ'}</em></div><strong>›</strong></button>)}</div>
+    </section>}
 
-      {screen === 'home' && (
-        <section className="home">
-          <div className="hero">
-            <div className="hero-glow" /><div className="hero-badge">{theme.emoji}</div>
-            <p className="eyebrow">TRIPLIX WORLD</p><h1>Seç.<br /><em>Üçle.</em> Patlat.</h1>
-            <p className="subtitle">Her bölüm yeni bir hedef, her üçlü biraz daha yüksek combo. 🎯</p>
-            <button className="primary" onClick={() => startGame(1, mode)}>OYUNA BAŞLA <span>→</span></button>
-            <div className="hero-mini-row"><span>🔥 Combo</span><b>x{combo}</b><span>⭐ Bölüm</span><b>{level}/60</b></div>
-          </div>
-          <div className="home-actions">
-            <button className="big-link" onClick={() => setScreen('modes')}><span className="big-link-icon">🎨</span><div><b>OYUN MODLARI</b><small>{mode} · 4 farklı dünya</small></div><strong>›</strong></button>
-            <button className="big-link" onClick={() => setScreen('levels')}><span className="big-link-icon">🗺️</span><div><b>BÖLÜMLER</b><small>60 bölüm · yıldızlarını topla</small></div><strong>›</strong></button>
-          </div>
-        </section>
-      )}
+    {screen==='levels'&&<section className="subscreen">
+      <div className="page-head"><button className="back" onClick={()=>setScreen('worlds')}>‹</button><div><span>{theme.title.toUpperCase()}</span><h2>Bölüm Haritası</h2></div></div>
+      <div className="map-banner"><div className="map-art">{theme.emoji}<span>WORLD</span></div><div><b>{theme.title}</b><small>Seviye {level} / 60</small><div className="bar"><i style={{width:`${Math.min(100,(level/60)*100)}%`}}/></div></div></div>
+      <div className="level-path">{Array.from({length:60},(_,i)=>i+1).map(n=>{const locked=n>level+1;return <button disabled={locked} key={n} className={`level-node ${n===level?'current':''} ${locked?'locked':''}`} onClick={()=>start(n,world)}><b>{locked?'🔒':n}</b><span>{locked?'':'★'.repeat(n<level?3:1)+'☆'.repeat(n<level?0:2)}</span></button>})}</div>
+    </section>}
 
-      {screen === 'modes' && (
-        <section className="subscreen">
-          <div className="section-top"><button className="back" onClick={() => setScreen('home')}>‹</button><div><span>TRIPLIX WORLD</span><h2>Oyun Modları</h2></div></div>
-          <p className="section-copy">Her dünyanın kendi taşı, rengi ve atmosferi var.</p>
-          <div className="mode-grid">
-            {(Object.keys(themes) as Mode[]).map(item => (
-              <button key={item} className={`mode-card mode-${item.toLowerCase()} ${mode === item ? 'active' : ''}`} onClick={() => { setMode(item); setScreen('levels') }}>
-                <div className="mode-art"><span>{themes[item].emoji}</span><i /></div><div className="mode-info"><b>{item}</b><small>{themes[item].subtitle}</small></div><strong>{mode === item ? '✓' : '›'}</strong>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {screen === 'levels' && (
-        <section className="subscreen">
-          <div className="section-top"><button className="back" onClick={() => setScreen('home')}>‹</button><div><span>{mode.toUpperCase()}</span><h2>Bölümler</h2></div></div>
-          <div className="world-banner"><div className="world-banner-art">{theme.emoji}</div><div><b>{mode}</b><small>Seviye {level} · 60 bölüm</small></div><span>{Math.round((level / 60) * 100)}%</span></div>
-          <div className="level-grid">
-            {Array.from({ length: 60 }, (_, i) => i + 1).map(item => {
-              const locked = item > level + 1
-              const stars = item < level ? 3 : item === level ? 1 : 0
-              return <button key={item} className={`level-tile ${item === level ? 'current' : ''} ${locked ? 'locked' : ''}`} disabled={locked} onClick={() => startGame(item, mode)}>
-                <b>{locked ? '🔒' : item}</b>{!locked && <span>{'★'.repeat(stars)}{'☆'.repeat(3-stars)}</span>}
-              </button>
-            })}
-          </div>
-        </section>
-      )}
-
-      {screen === 'game' && (
-        <section className="game-screen">
-          <div className="game-head"><button className="back" onClick={() => setScreen('levels')}>‹</button><div><span>BÖLÜM {level}</span><b>{mode.toUpperCase()}</b></div><div className="coins">🪙 400</div></div>
-          <div className="stats"><div><small>SKOR</small><b>{score}</b></div><div><small>HAMLE</small><b>{moves}</b></div><div><small>HEDEF</small><b>{triples}/{goal}</b></div><div><small>COMBO</small><b className="combo">{combo ? `x${combo}` : 'x0'}</b></div></div>
-          <div className="progress"><i style={{ width: `${Math.min(100, (triples / goal) * 100)}%` }} /></div>
-          <div className="board-wrap"><div className="board">
-            {board.map(stone => <button disabled={status !== 'playing'} key={stone.id} className={`stone ${animatingId === stone.id ? 'stone-pop' : ''}`} style={{ background: theme.colors[stone.kind] }} onClick={() => selectStone(stone)} aria-label={`Taş ${stone.kind + 1}`}><span>{theme.symbols[stone.kind]}</span></button>)}
-          </div></div>
-          <div className="tray-card"><div className="tray-title"><b>SEÇİLEN TAŞLAR</b><span>{tray.length}/7</span></div><div className="tray">
-            {Array.from({ length: 7 }, (_, index) => { const stone = tray[index]; return stone ? <div key={`${stone.id}-${index}`} className="tray-stone" style={{ background: theme.colors[stone.kind] }}>{theme.symbols[stone.kind]}</div> : <div className="tray-slot" key={index} /> })}
-          </div></div>
-          <div className={`message ${status !== 'playing' ? `message-${status}` : ''}`}>{message}</div>
-          {status !== 'playing' && <div className="result-card"><div className="result-icon">{status === 'won' ? '🏆' : '💥'}</div><b>{status === 'won' ? 'BÖLÜM BAŞARILI' : 'TEPSİ DOLDU'}</b><small>{status === 'won' ? `${goal} üçlü tamamlandı · ${score} puan` : `${triples}/${goal} üçlü yaptın · ${score} puan`}</small><div className="result-actions"><button className="result-primary" onClick={() => startGame(status === 'won' ? level + 1 : level, mode)}>{status === 'won' ? 'SONRAKİ BÖLÜM →' : 'TEKRAR OYNA'}</button><button className="result-secondary" onClick={() => setScreen('home')}>ANA MENÜ</button></div></div>}
-          <div className="tools"><button disabled={status !== 'playing'} onClick={shuffle}>🔀 <span>KARIŞTIR</span></button><button disabled={status !== 'playing'} onClick={hint}>💡 <span>İPUCU</span></button><button onClick={() => startGame(level, mode)}>↻ <span>SIFIRLA</span></button></div>
-        </section>
-      )}
-    </main>
-  )
+    {screen==='game'&&<section className="game">
+      <div className="game-head"><button className="back" onClick={()=>setScreen('levels')}>‹</button><div className="level-sign"><span>{theme.title}</span><b>BÖLÜM {level}</b></div><div className="coins">🪙 400</div></div>
+      <div className="goal-strip"><div><small>HAMLE</small><b>{moves}</b></div><div><small>COMBO</small><b className="gold">x{combo}</b></div><div><small>HEDEF</small><b>{triples}/{goal}</b></div><div><small>SKOR</small><b>{score}</b></div></div>
+      <div className="game-scene"><div className="forest-layer"/><div className="game-board"><div className="depth-shadow"/>{board.map((stone,i)=><button disabled={status!=='playing'} key={stone.id} className={`stone ${selectedId===stone.id?'selected':''}`} style={{background:theme.colors[stone.kind%theme.colors.length],animationDelay:`${(i%7)*12}ms`}} onClick={()=>selectStone(stone)}><span>{theme.symbols[stone.kind]}</span></button>)}</div></div>
+      <div className="tray-wrap"><div className="tray-head"><b>SEÇİLEN TAŞLAR</b><span>{tray.length}/7</span></div><div className="tray">{Array.from({length:7},(_,i)=>{const s=tray[i];return s?<div className="tray-stone" key={i} style={{background:theme.colors[s.kind%theme.colors.length]}}>{theme.symbols[s.kind]}</div>:<div className="tray-slot" key={i}/>})}</div></div>
+      <div className={`message ${status}`}>{message}</div>
+      {status!=='playing'&&<div className="result"><div className="result-burst">{status==='won'?'🏆':'💥'}</div><b>{status==='won'?'BÖLÜM TAMAMLANDI!':'TEPSİ DOLDU!'}</b><small>{status==='won'?'${goal} üçlü tamamlandı':'Daha iyi bir sıra kurup tekrar dene'}</small><div><button className="primary" onClick={()=>start(status==='won'?level+1:level,world)}>{status==='won'?'SONRAKİ BÖLÜM':'TEKRAR OYNA'} →</button><button className="ghost" onClick={()=>setScreen('levels')}>BÖLÜMLER</button></div></div>}
+      <div className="tools"><button disabled={status!=='playing'} onClick={shuffle}>🔀<span>Karıştır</span></button><button disabled={status!=='playing'} onClick={hint}>💡<span>İpucu</span></button><button onClick={()=>start(level,world)}>↻<span>Sıfırla</span></button></div>
+    </section>}
+  </main>
 }
-
-createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>)
+createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>)

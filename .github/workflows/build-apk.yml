@@ -24,6 +24,25 @@ jobs:
         with:
           gradle-version: '9.7.1'
 
+      - name: Apply Compose compatibility fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/com/triplix/app/TriplixApp.kt')
+          s = p.read_text()
+          old = '''            AnimatedVisibility(visible = banner.isNotEmpty(), enter = fadeIn(tween(120)), exit = fadeOut(tween(220)), modifier = Modifier.align(Alignment.Center)) {
+                Surface(RoundedCornerShape(18.dp), color = Green, shadowElevation = 10.dp) { Text(banner, Modifier.padding(horizontal = 18.dp, vertical = 11.dp), color = Bg, fontSize = 16.sp, fontWeight = FontWeight.Black) }
+            }'''
+          new = '''            if (banner.isNotEmpty()) {
+                Surface(modifier = Modifier.align(Alignment.Center), shape = RoundedCornerShape(18.dp), color = Green, shadowElevation = 10.dp) {
+                    Text(banner, Modifier.padding(horizontal = 18.dp, vertical = 11.dp), color = Bg, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                }
+            }'''
+          if old not in s:
+              raise SystemExit('Expected Compose block was not found')
+          p.write_text(s.replace(old, new))
+          PY
+
       - name: Build debug APK
         run: gradle --no-daemon :app:assembleDebug
 

@@ -4,6 +4,8 @@ import {Icon} from '@iconify/react'
 import './main3d.css'
 
 type Screen='home'|'worlds'|'levels'|'game'
+type ThreeStone={id:number;kind:number;layer:number;x:number;y:number;rot:number}
+type ThreeWorld={bg:string;icons:readonly string[];colors:readonly string[];table:string;accent:string}
 type Status='playing'|'won'|'lost'
 type World=keyof typeof worlds
 type Config={stones:number;kinds:number;moves:number;layers:number}
@@ -40,6 +42,18 @@ function makeBoard(seed:number,level:number):ThreeStone[]{
  return out
 }
 const icon=(name:string)=>`game-icons:${name}`
+const iconTint=(name:string)=>{
+ const n=name.toLowerCase()
+ if(/strawberry|cherry|apple|watermelon|tomato|berry/.test(n))return'#c94a3d'
+ if(/banana|lemon|orange|corn|sun|topaz|gold|crown|coin|trophy/.test(n))return'#d8a52f'
+ if(/grape|amethyst|magic|portal|galaxy|wizard/.test(n))return'#8652c7'
+ if(/blueberry|sapphire|water|moon|rocket|diamond|crystal|snow|ice|planet/.test(n))return'#3f8fd4'
+ if(/leaf|sprout|tree|frog|nature|emerald/.test(n))return'#4f9e5b'
+ if(/fire|volcano|meteor/.test(n))return'#d86142'
+ if(/cat|dog|fox|rabbit|bear|owl|panda|penguin|turtle|wolf|paw|fish|bird/.test(n))return'#a86d4f'
+ if(/ankh|scarab|sphinx|pyramid|temple|amphora|pharaoh|mummy|ruins|key/.test(n))return'#a77e45'
+ return'#596a78'
+}
 function StackBoard({stones,tray,theme,selectedId,onPick}:{stones:ThreeStone[];tray:ThreeStone[];theme:ThreeWorld;selectedId:number|null;onPick:(s:ThreeStone)=>void}){
  const blocked=(s:ThreeStone)=>stones.some(o=>o.id!==s.id&&o.layer>s.layer&&Math.abs(o.x-s.x)<=1&&Math.abs(o.y-s.y)<=1);
  const icons=theme.icons;
